@@ -371,9 +371,9 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
       </form>
       <form class="adm" id="fimp" hidden>
         <b style="font-family:Archivo,system-ui;color:var(--ink);font-size:16px">Importar a escala do mês</b>
-        <p class="note" style="text-align:left;margin:0">Escolha o arquivo do <b>Word</b> ou do <b>Excel</b>, do jeito que ele chegou. O app lê a tabela e mostra tudo para você conferir antes de publicar.</p>
+        <p class="note" style="text-align:left;margin:0">Escolha o arquivo do <b>Word</b>, <b>Excel</b> ou <b>PDF</b>, do jeito que ele chegou. O app lê a tabela e mostra tudo para você conferir antes de publicar.</p>
         <label>Congregação<select name="cong" class="selC" required></select></label>
-        <label>Arquivo da escala (.docx ou .xlsx)<input name="arq" type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
+        <label>Arquivo da escala (Word, Excel ou PDF)<input name="arq" type="file" accept=".docx,.xlsx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
         <details><summary>Ou copie a tabela e cole aqui</summary><textarea name="txt" rows="4" placeholder="Selecione a tabela no Word ou Excel, copie e cole aqui"></textarea></details>
         <button class="btn">Ler a escala</button><div class="msg"></div>
         <div id="impPrev"></div>
@@ -1032,10 +1032,10 @@ function linhas2escala(L,cn){const K=cultosConhecidos(cn),out=[],p2=v=>String(v)
       return mm&&!/(DA|DO|DE) /.test(nrm1(f).slice(mm[0].length,mm[0].length+3))&&(c.split('\n').length>1||mm[0].length===f.length)?f.slice(mm[0].length).trim():c}).filter(c=>c.replace(/[\s\-–.]/g,''));
     if(!cells.length)continue;
     let culto='',pes=[],grupo='';
-    const [c0,r0]=separa(cells[0],K);culto=c0;pes=pessoasDe(r0);
+    const [c0,r0]=separa(cells[0],K);culto=c0;const sigla=x=>x.trim()&&x.trim().split(/\s+/).every(w=>ACR.has(nrm1(w))||!/[AEIOU]/.test(nrm1(w)));if(!temTit(r0)&&sigla(r0)){grupo=r0.trim()}else pes=pessoasDe(r0);
     const resto=cells.slice(1);
     if(resto.length){const last=resto[resto.length-1];const lastP=temTit(last);
-      const mid=lastP?resto:resto.slice(0,-1);if(!lastP)grupo=tCase(last.replace(/\s+/g,' '));
+      const mid=lastP?resto:resto.slice(0,-1);if(!lastP)grupo=[grupo,tCase(last.replace(/\s+/g,' '))].filter(Boolean).join(', ');
       for(const c of mid)pes.push(...pessoasDe(c))}
     if(!culto&&!pes.length)continue;
     out.push({data,hora,culto,pessoas:pes.slice(0,30),grupo})}
@@ -1046,8 +1046,28 @@ function linhas2escala(L,cn){const K=cultosConhecidos(cn),out=[],p2=v=>String(v)
     if(!s.hora&&s.culto){const c=doDia.find(p=>nrm1(p.nome)===nrm1(s.culto))||pg.find(p=>nrm1(p.nome)===nrm1(s.culto))||(/^EBD/.test(nrm1(s.culto))&&doDia.find(p=>/EBD|ESCOLA/.test(nrm1(p.nome))));if(c)s.hora=c.hora}
     const gs=[...new Set(ALL.escalas.flatMap(gr))];if(s.grupo){const g=gs.find(x=>nrm1(x)===nrm1(s.grupo));if(g)s.grupo=g}}
   out.sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
-  const msg=[...(L.pre||[]).filter(t=>!/ESCALA/.test(nrm1(t))),...(L.pos||[])].join('\n\n').slice(0,800);
+  const msg=[...(L.pre||[]).filter(t=>!/^\W*ESCALA\b/.test(nrm1(t))),...(L.pos||[])].join('\n\n').slice(0,800);
   return{itens:out,msg}}
+const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+async function lerPdf(buf){let pj;try{pj=await import(PDFJS+'pdf.min.mjs')}catch(_){throw{code:'net'}}pj.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.mjs';
+  const doc=await pj.getDocument({data:new Uint8Array(buf)}).promise;const linhas=[];
+  for(let p=1;p<=doc.numPages;p++){const pg=await doc.getPage(p);const tc=await pg.getTextContent();
+    const its=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5],h:Math.abs(i.transform[3])||10})).sort((a,b)=>b.y-a.y||a.x-b.x);
+    for(const it of its){const L=linhas[linhas.length-1];if(L&&L.p===p&&Math.abs(L.y-it.y)<=Math.max(2,it.h*.35))L.its.push(it);else linhas.push({p,y:it.y,h:it.h,its:[it]})}}
+  linhas.forEach(l=>l.its.sort((a,b)=>a.x-b.x));
+  const DT=/^\d{1,2}\s*[\/.\-]\s*\d{1,2}/,ehD=l=>DT.test(l.its[0].s);const dl=linhas.filter(ehD);
+  const junta=a=>a.filter(s=>!/^\W*ESCALA\b/.test(nrm1(s))).join(' ').replace(/\s+/g,' ').trim();
+  if(!dl.length)return{pre:[],pos:[],rows:linhas.map(l=>l.its.map(i=>i.s))};
+  const xs={};dl.forEach(l=>l.its.forEach(i=>{const k=Math.round(i.x/4)*4;xs[k]=(xs[k]||0)+1}));
+  let cols=Object.entries(xs).filter(([k,n])=>n>=Math.max(2,dl.length*.25)).map(([k])=>+k).sort((a,b)=>a-b);cols=cols.filter((c,i)=>!i||c-cols[i-1]>8);
+  const colDe=x=>{let c=0;for(let i=0;i<cols.length;i++)if(x>=cols[i]-6)c=i;return c};
+  const rows=[],pre=[],pos=[];let cur=null,last=null;
+  const poe=l=>{for(const i of l.its){const c=colDe(i.x);cur[c]=(cur[c]?cur[c]+' ':'')+i.s}last=l};
+  for(const l of linhas){const txt=l.its.map(i=>i.s).join(' ');
+    if(ehD(l)){cur=cols.map(()=>'');rows.push(cur);poe(l);continue}
+    if(!cur){pre.push(txt);continue}
+    if(last&&l.p===last.p&&last.y-l.y<=l.h*1.8)poe(l);else{pos.push(txt);last=null}}
+  return{pre:[junta(pre)].filter(Boolean),pos:[junta(pos)].filter(Boolean),rows}}
 let IMP=null;
 function rImp(){const box=$('#impPrev');if(!IMP){box.innerHTML='';return}
   const {cong:cn,itens,msg}=IMP;const meses=[...new Set(itens.map(s=>s.data.slice(0,7)))];const mk=meses.sort((a,b)=>itens.filter(s=>s.data.startsWith(b)).length-itens.filter(s=>s.data.startsWith(a)).length)[0]||'';
@@ -1077,10 +1097,10 @@ async function impPublicar(btn){impLer();const m=$('#impMsg');const bad=IMP.iten
 $('#fimp').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,m=f.querySelector('.msg');m.textContent='';const cn=f.elements.cong.value;const arq=f.elements.arq.files[0],txt=f.elements.txt.value.trim();
   if(!arq&&!txt){m.textContent='Escolha o arquivo da escala (ou cole a tabela).';return}
   m.textContent='Lendo a escala…';try{let L;
-    if(arq){const nm=arq.name.toLowerCase();if(/\.(doc|xls)$/.test(nm))throw{code:'velho'};if(/\.pdf$/.test(nm))throw{code:'pdf'};const z=await zipAbre(await arq.arrayBuffer());L=z.nomes.includes('word/document.xml')?await lerDocx(z):z.nomes.some(n=>n.startsWith('xl/'))?await lerXlsx(z):null;if(!L)throw{code:'fmt'}}
+    if(arq){const nm=arq.name.toLowerCase();if(/\.(doc|xls)$/.test(nm))throw{code:'velho'};if(/\.pdf$/.test(nm)||arq.type==='application/pdf'){m.textContent='Lendo o PDF…';L=await lerPdf(await arq.arrayBuffer())}else{const z=await zipAbre(await arq.arrayBuffer());L=z.nomes.includes('word/document.xml')?await lerDocx(z):z.nomes.some(n=>n.startsWith('xl/'))?await lerXlsx(z):null}if(!L)throw{code:'fmt'}}
     else L={pre:[],pos:[],rows:txt.split(/\r?\n/).map(l=>l.split('\t'))};
     const r=linhas2escala(L,cn);if(!r.itens.length)throw{code:'vazio'};IMP={cong:cn,...r};m.textContent='';rImp();$('#impPrev').scrollIntoView({behavior:'smooth',block:'start'})}
-  catch(err){const c=err&&err.code;IMP=null;rImp();m.textContent=c==='velho'?'Esse arquivo é do formato antigo. Abra no Word/Excel e salve como .docx ou .xlsx.':c==='pdf'?'PDF não dá para ler. Use o arquivo do Word ou do Excel.':c==='vazio'?'Não encontrei nenhuma data na tabela. Confira se é o arquivo da escala.':'Não consegui ler esse arquivo. Tente salvar de novo como .docx ou .xlsx.'}});
+  catch(err){const c=err&&err.code;IMP=null;rImp();m.textContent=c==='velho'?'Esse arquivo é do formato antigo. Abra no Word/Excel e salve como .docx ou .xlsx.':c==='net'?'Para ler PDF o celular precisa estar com internet. Tente de novo.':c==='vazio'?'Não encontrei nenhuma data na tabela. Confira se é o arquivo da escala.':'Não consegui ler esse arquivo. Se for PDF escaneado (foto), use o Word ou o Excel.'}});
 $('#impPrev').addEventListener('click',e=>{const t=e.target.closest('[data-impx],[data-imppub],[data-impcan]');if(!t)return;
   if(t.dataset.impx!==undefined){impLer();IMP.itens.splice(+t.dataset.impx,1);if(!IMP.itens.length)IMP=null;rImp()}
   else if(t.dataset.imppub)impPublicar(t);else{IMP=null;$('#fimp').reset();rImp()}});
