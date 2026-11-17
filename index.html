@@ -6,7 +6,7 @@
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#0b2160"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="AD Carlos Barbosa">
 <title>AD Carlos Barbosa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Cinzel:wght@600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* VOICE: sereno, confiável, institucional — o app oficial da AD Carlos Barbosa.
    IDEA: o boletim da igreja em formato de app nativo: cabeçalho da marca, próximo culto em destaque, cartazes e escala.
@@ -67,6 +67,17 @@ header h1{white-space:nowrap}@media(max-width:400px){header h1{font-size:17px}}.
 .wk .td{background:var(--wine);color:#fff}.wk .td small{color:#ffffffc0}.wk .td.on i{background:#fff}
 .wkl{margin-top:10px}
 .gc{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.gc .greet{flex:1}.gc .greet p{white-space:nowrap}.home .gc .cbtn{margin:0 0 -3px;max-width:48%;flex:none;min-height:30px;padding:0 10px 0 9px;font-size:13px;gap:6px}.home .gc .cbtn .ic{width:14px;height:14px}.gc .cbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hwrap{z-index:1}main{position:relative;z-index:2}.home .hwrap{padding-bottom:56px!important}
+
+/* cores por congregação */
+.cpill{display:inline-flex;align-items:center;gap:5px;font:800 11px Manrope,system-ui,sans-serif;letter-spacing:.03em;padding:2px 8px 2px 6px;border-radius:20px;color:var(--cc);background:color-mix(in srgb,var(--cc) 14%,transparent);vertical-align:1px;margin-left:2px;white-space:nowrap}
+.cpill::before,.cdot{content:"";width:7px;height:7px;border-radius:7px;background:var(--cc);flex:none;display:inline-block}
+.ev[style*="--cc"] .dt{background:color-mix(in srgb,var(--cc) 14%,var(--card));color:var(--cc)}
+.ev[style*="--cc"]{box-shadow:inset 4px 0 0 var(--cc),var(--sh)}
+.opt .cdot{width:10px;height:10px;margin-right:10px}.opt .on-l{display:flex;align-items:center}
+.cleg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 2px 0;font:700 12.5px Manrope,system-ui,sans-serif;color:var(--mut)}.cleg span{display:inline-flex;align-items:center;gap:6px}
+.cbtn .cdot{width:9px;height:9px;box-shadow:0 0 0 2px #ffffff40}
+/* tela de abertura */
+#splash{position:fixed;inset:0;z-index:200;background:#01040d;transition:opacity .5s ease,visibility .5s}#splash.out{opacity:0;visibility:hidden}#splash canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
 .dots i{width:6px;height:6px;border-radius:9px;background:var(--line);transition:width .2s}.dots i.on{background:var(--wine);width:20px}
 .ev{display:flex;gap:14px;align-items:center;background:var(--card);border:0;border-radius:16px;padding:12px;margin-bottom:10px;cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit;box-shadow:var(--sh)}
@@ -204,6 +215,7 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
 </style>
 </head>
 <body>
+<div id="splash" role="status" aria-label="Carregando"><canvas id="spcv"></canvas></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
@@ -259,7 +271,7 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
     <div class="seg"><button class="on" data-cv="mes">Mês</button><button data-cv="ano">Ano inteiro</button></div>
     <div id="cMes">
       <div class="cal-h"><button class="ib" id="prev" aria-label="Mês anterior"><svg class="ic" style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button><h2 id="mesT"></h2><button class="ib" id="next" aria-label="Próximo mês"><svg class="ic"><use href="#i-chev"/></svg></button></div>
-      <div class="grid" id="grid"></div>
+      <div class="grid" id="grid"></div><div class="cleg" id="cleg"></div>
       <div class="h2" id="diaT"></div><div id="diaL"></div>
     </div>
     <div id="cAno" hidden>
@@ -504,7 +516,196 @@ function expand(){if(expKey===S.eventos)return expCache;const out=[];const lim=i
 const sorted=()=>[...expand()].sort((a,b)=>(a.data+(a.hora||'')).localeCompare(b.data+(b.hora||'')));
 const futuros=()=>sorted().filter(e=>e.data>=TODAY&&inCong(e));
 const art=(e,cls='')=>{const c=mcol(e.ministerio);return `<div class="art ${cls}" style="background:linear-gradient(150deg,${c},${c}cc 60%,#1a0a12)">${hasMedia(e)?media(e,e.titulo):cross+`<div class="sm">${esc(e.ministerio||'Geral')}</div>`}${hasMedia(e)?'':`<div><div class="big">${esc(e.titulo)}</div><div class="sm" style="margin-top:8px">${fmt(e.data,{day:'numeric',month:'long'})}${e.hora?' · '+esc(e.hora):''}</div></div>`}</div>`};
-const evRow=e=>`<button class="ev" data-ev="${esc(e.base||e.id)}" data-dt="${esc(e.data)}"><div class="dt"><b>${toD(e.data).getDate()}</b><span>${MES[toD(e.data).getMonth()].slice(0,3)}</span></div><div><h3>${esc(e.titulo)}</h3><p>${e.semanal?'Todos os '+DIAS[toD(e.data).getDay()]:fmt(e.data,{weekday:'long'})}${e.hora?' · '+esc(e.hora):''}${e.local?' · '+esc(e.local):''}${!cong&&e.cong&&e.cong!=='Todas'?' · '+esc(e.cong):''}</p></div>${IC('chev')}</button>`;
+
+const CC={'Sede':'#2f6bff','CEAD':'#e8822e','Arco Verde':'#1fa06b','Vitória':'#9b5cf6'};
+const ccol=c=>CC[c]||'#d9a52b';
+const cpill=c=>c&&c!=='Todas'?`<span class="cpill" style="--cc:${ccol(c)}">${esc(c)}</span>`:'';
+function adIntro(cv, I, opt) {
+opt = opt || {};
+const X = cv.getContext('2d');
+const off = document.createElement('canvas'), O = off.getContext('2d');
+const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+const p = (t, a, b) => cl((t - a) / (b - a), 0, 1);
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const ex = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+let sd = 11; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+const BK = Array.from({ length: 18 }, () => ({ x: rnd(), y: rnd(), r: 8 + rnd() * 46, z: .3 + rnd() * .9, g: rnd() < .6, a: .03 + rnd() * .08, v: .2 + rnd() * .6, ph: rnd() * 6.28 }));
+const DU = Array.from({ length: 60 }, () => ({ x: rnd(), y: rnd(), r: .6 + rnd() * 1.6, v: .1 + rnd() * .4, ph: rnd() * 6.28 }));
+const FT = opt.fontT || 'Cinzel, Georgia, serif', FS = opt.fontS || 'Manrope, system-ui, sans-serif';
+let grainP = null, off2 = null;
+function spaced(txt, x, y, sp) {
+const ws = [...txt].map(c => X.measureText(c).width);
+const tot = ws.reduce((a, b) => a + b, 0) + sp * (ws.length - 1);
+let cx = x - tot / 2;
+[...txt].forEach((c, i) => { X.fillText(c, cx, y); cx += ws[i] + sp; });
+}
+function flare(x, y, k, len, u) { // flare anamorfico horizontal
+if (k <= 0) return;
+X.save(); X.globalCompositeOperation = 'lighter';
+let g = X.createRadialGradient(x, y, 0, x, y, 120 * u * (.6 + k * .6));
+g.addColorStop(0, `rgba(255,255,255,${.9 * k})`); g.addColorStop(.25, `rgba(190,215,255,${.35 * k})`); g.addColorStop(1, 'rgba(120,160,255,0)');
+X.fillStyle = g; X.fillRect(x - 200 * u, y - 200 * u, 400 * u, 400 * u);
+X.translate(x, y); X.scale(1, .018);
+g = X.createRadialGradient(0, 0, 0, 0, 0, len);
+g.addColorStop(0, `rgba(235,245,255,${.95 * k})`); g.addColorStop(.3, `rgba(120,170,255,${.45 * k})`); g.addColorStop(1, 'rgba(60,110,255,0)');
+X.fillStyle = g; X.fillRect(-len, -len, len * 2, len * 2);
+X.restore();
+}
+return function draw(t) {
+const W = cv.width, H = cv.height, u = Math.min(W, H * .5625) / 1080;
+const cx = W / 2, cy = H * .43;
+X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over';
+const on = eo(p(t, 0, 1.4));
+const bg = X.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * .7);
+bg.addColorStop(0, `rgb(${6 + 10 * on},${14 + 30 * on},${40 + 78 * on})`); bg.addColorStop(.5, `rgb(3,${8 + 8 * on},${20 + 22 * on})`); bg.addColorStop(1, '#010309');
+X.fillStyle = bg; X.fillRect(0, 0, W, H);
+if (I.fog) {
+X.globalCompositeOperation = 'lighter';
+for (let L = 0; L < 2; L++) {
+const fw = W * 1.5, fh = fw * 568 / 320, dx = (L ? -1 : 1) * t * 18 * u - fw * .17, dy = cy - fh / 2 + (L ? 60 : -40) * u;
+X.globalAlpha = (.06 + .04 * L) * (.4 + .6 * on);
+X.drawImage(I.fog, dx, dy, fw, fh);
+}
+X.globalAlpha = 1; X.globalCompositeOperation = 'source-over';
+}
+const cam = 1.1 - .1 * eo(p(t, 0, 4.2));
+X.setTransform(cam, 0, 0, cam, cx * (1 - cam), cy * (1 - cam));
+X.globalCompositeOperation = 'lighter';
+for (const b of BK) {
+const y = ((b.y - t * .02 * b.v) % 1 + 1) % 1 * H, x = b.x * W + Math.sin(t * .5 + b.ph) * 10 * u;
+const r = b.r * u * (1.6 - b.z * .4), a = b.a * on;
+const g = X.createRadialGradient(x, y, r * .7, x, y, r);
+const c = b.g ? '243,190,90' : '120,165,255';
+g.addColorStop(0, `rgba(${c},${a})`); g.addColorStop(1, `rgba(${c},0)`);
+X.fillStyle = g; X.beginPath(); X.arc(x, y, r, 0, 6.29); X.fill();
+}
+X.globalCompositeOperation = 'source-over';
+const LW = 640 * u, LH = LW * 619 / 1028, lx = cx - LW / 2, ly = cy - LH / 2;
+const gp = eo(p(t, .5, 1.6));
+if (gp > 0 && I.glow) {
+const gw = LW * 1428 / 1028 * (1 + .04 * Math.sin(t * 2.4)), gh = gw * 1019 / 1428;
+X.globalCompositeOperation = 'lighter'; X.globalAlpha = .42 * gp;
+X.drawImage(I.glow, cx - gw / 2, cy - gh / 2, gw, gh);
+X.globalAlpha = 1; X.globalCompositeOperation = 'source-over';
+}
+off.width = Math.ceil(LW + 2); off.height = Math.ceil(LH + 2);
+O.clearRect(0, 0, off.width, off.height);
+const fp = p(t, .45, 1.5);
+if (fp > 0) {
+O.globalAlpha = eo(fp); O.drawImage(I.flame, 0, 0, LW, LH);
+const hot = (1 - eo(p(t, .7, 1.9))) * eo(fp);
+if (hot > 0) { O.globalCompositeOperation = 'lighter'; O.globalAlpha = hot; O.drawImage(I.flame, 0, 0, LW, LH); O.globalAlpha = hot * .6; O.drawImage(I.flame, 0, 0, LW, LH); O.globalCompositeOperation = 'source-over'; }
+O.globalAlpha = 1;
+}
+const wp = eio(p(t, 1.0, 2.0));
+const wx = -LW * .15 + wp * LW * 1.3;
+if (wp > 0) {
+off2 = off2 || document.createElement('canvas'); off2.width = off.width; off2.height = off.height;
+const Q = off2.getContext('2d'); Q.clearRect(0, 0, off2.width, off2.height);
+Q.drawImage(I.A, 0, 0, LW, LH); Q.drawImage(I.D, 0, 0, LW, LH);
+const m = Q.createLinearGradient(wx - LW * .12, 0, wx + LW * .02, 0);
+m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+Q.globalCompositeOperation = 'destination-in'; Q.fillStyle = m; Q.fillRect(0, 0, LW, LH);
+Q.globalCompositeOperation = 'source-atop';
+const e = Q.createLinearGradient(wx - LW * .14, 0, wx + LW * .02, 0);
+e.addColorStop(0, 'rgba(160,200,255,0)'); e.addColorStop(.8, `rgba(200,225,255,${.9 * (1 - p(t, 1.9, 2.1))})`); e.addColorStop(1, 'rgba(255,255,255,0)');
+Q.fillStyle = e; Q.fillRect(0, 0, LW, LH);
+O.globalCompositeOperation = 'destination-over'; O.drawImage(off2, 0, 0); O.globalCompositeOperation = 'source-over';
+}
+const sp = p(t, 2.7, 3.35);
+if (sp > 0 && sp < 1) {
+const sx = -LW * .3 + eio(sp) * LW * 1.6;
+const g = O.createLinearGradient(sx - LW * .09, 0, sx + LW * .09, LH * .25);
+g.addColorStop(0, 'rgba(255,240,200,0)'); g.addColorStop(.5, 'rgba(255,248,225,.9)'); g.addColorStop(1, 'rgba(255,240,200,0)');
+O.globalCompositeOperation = 'source-atop'; O.fillStyle = g; O.fillRect(0, 0, LW, LH);
+O.globalCompositeOperation = 'source-over';
+}
+X.drawImage(off, lx, ly);
+flare(cx + LW * .05, ly + LH * .1, Math.sin(Math.PI * p(t, .35, 1.35)) * .9, 900 * u, u);
+if (wp > 0 && wp < 1) flare(lx + wx, cy, Math.sin(Math.PI * wp) * .8, 760 * u, u);
+flare(lx + (-LW * .3 + eio(sp) * LW * 1.6), ly + LH * .2, sp > 0 && sp < 1 ? Math.sin(Math.PI * sp) * .35 : 0, 500 * u, u);
+X.globalCompositeOperation = 'lighter';
+const dp = on * .9;
+for (const d of DU) {
+const x = d.x * W + Math.sin(t * d.v * 2 + d.ph) * 20 * u, y = ((d.y - t * .015 * d.v) % 1 + 1) % 1 * H;
+const a = dp * (.25 + .35 * Math.sin(t * 1.7 + d.ph * 3) ** 2);
+X.fillStyle = `rgba(255,215,140,${a})`; X.beginPath(); X.arc(x, y, d.r * u * 1.4, 0, 6.29); X.fill();
+}
+X.globalCompositeOperation = 'source-over';
+const ty = ly + LH + 92 * u;
+const lp = eio(p(t, 1.9, 2.6));
+if (lp > 0) {
+const lw = 190 * u * lp;
+const g = X.createLinearGradient(cx - lw, 0, cx + lw, 0);
+g.addColorStop(0, 'rgba(217,165,43,0)'); g.addColorStop(.5, '#f6d27a'); g.addColorStop(1, 'rgba(217,165,43,0)');
+X.fillStyle = g; X.fillRect(cx - lw, ty - 2 * u, lw * 2, 4 * u);
+}
+X.textBaseline = 'middle';
+const tp = p(t, 1.95, 3.0);
+if (tp > 0) {
+X.font = `600 ${70 * u}px ${FT}`;
+const spc = (10 + 26 * (1 - ex(tp))) * u;
+X.fillStyle = '#ffffff';
+X.shadowColor = 'rgba(160,200,255,.55)'; X.shadowBlur = (6 + 30 * (1 - eo(tp))) * u * cam;
+X.globalAlpha = eo(tp);
+spaced('CARLOS BARBOSA', cx, ty + 82 * u, spc);
+X.shadowBlur = 0;
+}
+const sp2 = p(t, 2.35, 3.2);
+if (sp2 > 0) {
+X.globalAlpha = eo(sp2) * .95; X.fillStyle = '#e9bd5a';
+X.font = `700 ${30 * u}px ${FS}`;
+spaced('ASSEMBLEIA DE DEUS', cx, ty + 156 * u, (14 + 10 * (1 - eo(sp2))) * u);
+}
+X.globalAlpha = 1;
+X.setTransform(1, 0, 0, 1, 0, 0);
+const vp = p(t, 3.0, 3.8);
+if (vp > 0 && opt.verse !== false) {
+X.globalAlpha = eo(vp) * .62; X.fillStyle = '#dfe7ff'; X.textAlign = 'center';
+X.font = `italic 500 ${28 * u}px ${FS}`;
+const vy = H - Math.max(150 * u, H * .085);
+X.fillText('“Alegrei-me quando me disseram:', cx, vy - 21 * u);
+X.fillText('Vamos à casa do Senhor.” — Salmos 122:1', cx, vy + 21 * u);
+X.textAlign = 'start'; X.globalAlpha = 1;
+}
+const v = X.createRadialGradient(cx, H * .45, Math.min(W, H) * .3, cx, H * .45, Math.max(W, H) * .72);
+v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.78)');
+X.fillStyle = v; X.fillRect(0, 0, W, H);
+if (I.grain) {
+grainP = grainP || X.createPattern(I.grain, 'repeat');
+X.save(); X.globalCompositeOperation = 'overlay'; X.globalAlpha = .16;
+const k = Math.floor(t * 24); X.translate((k * 73) % 160, (k * 131) % 160);
+X.fillStyle = grainP; X.fillRect(-160, -160, W + 320, H + 320); X.restore();
+}
+const fi = 1 - eo(p(t, 0, .5));
+if (fi > 0) { X.fillStyle = `rgba(0,0,0,${fi})`; X.fillRect(0, 0, W, H); }
+};
+}
+function adAssets(cv){
+const P={"A":"M 214.4 118.7 C 213.1 119.6, 211.0 123.5, 208.1 130 C 207.1 132.4, 205.0 137.1, 203.6 140.3 C 202.1 143.6, 201 146.6, 201 147.0 C 201 147.5, 199.2 151.7, 197 156.3 C 194.8 161.0, 193 165.1, 193 165.4 C 193 165.8, 191.1 169.9, 188.8 174.7 C 186.6 179.4, 183.7 186.1, 182.3 189.7 C 181.0 193.2, 178.6 198.6, 177.1 201.7 C 175.5 204.9, 173.7 209.3, 173.0 211.5 C 172.3 213.7, 170.0 219.1, 168.0 223.5 C 165.9 227.9, 163.4 233.5, 162.4 236 C 161.4 238.4, 159.1 243.7, 157.3 247.7 C 155.4 251.6, 154 255.2, 154 255.5 C 154 255.9, 151.7 261.2, 149 267.5 C 146.2 273.7, 144 279.0, 144 279.4 C 144 279.7, 142.4 283.4, 140.4 287.5 C 138.5 291.6, 135.7 298.0, 134.3 301.7 C 132.9 305.4, 131.4 308.9, 131.0 309.5 C 130.2 310.4, 124.0 324.9, 116.2 344 C 114.3 348.6, 111.3 355.6, 109.5 359.5 C 107.7 363.3, 105.9 367.6, 105.5 369 C 105.1 370.3, 103.0 375.1, 100.8 379.6 C 98.7 384.0, 97 388.2, 97 388.8 C 97 389.4, 95.0 394.1, 92.6 399.2 C 90.1 404.3, 87.2 411.1, 86.0 414.4 C 84.8 417.7, 83.4 420.9, 82.9 421.5 C 82.5 422.0, 80.5 426.3, 78.7 431.0 C 76.8 435.6, 73.8 442.6, 72.1 446.5 C 65.8 460.9, 60 474.9, 60 475.4 C 60 475.7, 58.4 479.3, 56.5 483.2 C 54.7 487.2, 51.0 495.6, 48.4 502 C 45.9 508.3, 43.4 513.9, 42.9 514.5 C 42.5 515.0, 41.0 518.4, 39.6 522 C 36.9 529.0, 29.8 545.6, 27.5 550.5 C 26.0 553.6, 25.1 555.7, 19.3 569.9 C 17.4 574.6, 15.4 578.9, 15.0 579.4 C 14.5 580.0, 13.1 583.2, 11.9 586.5 C 10.7 589.8, 7.9 596.3, 5.7 600.9 C 0.9 611.2, -0.1 616.5, 2.6 617.1 C 7.3 618.2, 130.0 617.1, 131.4 616.0 C 132.2 615.4, 134.0 611.4, 135.5 607.1 C 137.1 602.9, 138.6 599.0, 139.0 598.5 C 139.4 597.9, 140.7 594.5, 141.9 591 C 143.9 585.1, 147.5 576.1, 151.5 567.3 C 152.3 565.6, 153 563.7, 153 563.3 C 153 562.8, 154.6 558.6, 156.5 553.9 C 158.5 549.3, 161.2 542.4, 162.5 538.6 C 163.8 534.8, 165.4 531.1, 166.1 530.3 C 167.3 528.8, 380.3 528.2, 382.6 529.7 C 383.2 530.1, 385.1 533.8, 386.9 538 C 388.6 542.1, 390.7 546.9, 391.5 548.7 C 392.3 550.5, 393 552.8, 393 553.8 C 393 554.7, 393.6 556.4, 394.4 557.5 C 395.1 558.6, 397.3 564.0, 399.3 569.5 C 401.2 575.0, 403.7 581.9, 405.0 585 C 406.2 588.0, 408.7 594.6, 410.5 599.6 C 414.7 611.1, 417.4 616.5, 419.5 617.3 C 423.2 618.7, 498 618.0, 498 616.6 C 498 614.7, 496.1 613.3, 492.4 612.4 C 488.5 611.4, 481.1 607.8, 472.3 602.6 C 424.5 574.5, 390.6 528.0, 379.0 474.5 C 377.8 469, 376.1 461.5, 375.3 458 C 371.6 442.7, 372.4 404.0, 376.9 384.5 C 382.0 361.5, 383.8 355.1, 386.9 348.5 C 388.0 346.3, 389.8 342.0, 391.0 339 C 395.4 327.8, 408.7 305.1, 415.7 296.5 C 418.4 293.2, 418.4 287.0, 415.5 282.7 C 414.7 281.5, 412.7 276.9, 411.1 272.5 C 409.5 268.1, 406.8 261.8, 405.2 258.5 C 403.5 255.2, 401.9 251.3, 401.5 250 C 401.1 248.6, 400.1 246.1, 399.4 244.5 C 394.9 234.2, 392 227.0, 392 226.5 C 392 226.2, 390.4 222.6, 388.6 218.7 C 386.7 214.7, 384.2 208.8, 383.0 205.5 C 381.7 202.2, 379.0 195.7, 376.8 191.2 C 374.7 186.6, 373 182.5, 373 182.1 C 373 181.1, 368.5 170.4, 366.9 167.7 C 366.4 166.7, 365.0 163.3, 363.8 160.2 C 362.7 157.0, 360.0 150.8, 357.9 146.3 C 355.8 141.9, 353.7 136.9, 353.3 135.4 C 352.0 129.9, 347.0 120.0, 345.0 119.0 C 342.8 117.8, 216.1 117.5, 214.4 118.7 M 273.3 255.7 C 273.0 256.7, 271.9 259.5, 270.9 262 C 269.9 264.4, 267.9 269.8, 266.4 273.9 C 265.0 278.0, 263.4 281.9, 262.9 282.6 C 262.3 283.2, 260.5 287.9, 258.9 293.1 C 257.2 298.2, 255.3 303.4, 254.6 304.5 C 253.4 306.4, 252.6 308.5, 246.4 325 C 244.8 329.1, 243.3 332.9, 242.9 333.5 C 242.6 334.0, 240.8 338.7, 238.9 344 C 237.1 349.2, 235.0 354.4, 234.4 355.5 C 233.7 356.6, 232.0 360.8, 230.6 365 C 229.2 369.1, 226.9 375.2, 225.4 378.5 C 223.9 381.8, 221.2 388.5, 219.4 393.5 C 217.6 398.4, 214.7 405.8, 213.0 409.8 C 211.3 413.8, 210 417.6, 210 418.2 C 210 418.7, 209.2 420.7, 208.4 422.5 C 204.8 430.0, 199.5 429.5, 274.9 429.5 C 336.9 429.5, 342.3 429.3, 343.3 427.8 C 344.1 426.6, 344.0 425.4, 343.2 423.8 C 342.5 422.5, 341.4 419.7, 340.6 417.5 C 337.4 408.9, 331.1 392.1, 328.0 384.5 C 326.3 380.1, 323.9 374.0, 322.8 371 C 321.7 367.9, 319.7 363.0, 318.4 360 C 317.2 356.9, 315.1 351.5, 313.9 348 C 312.7 344.4, 311.4 341.0, 311.0 340.5 C 310.6 339.9, 308.8 335.4, 307.1 330.5 C 304.0 321.3, 302.2 316.7, 298.8 309.3 C 297.8 306.9, 297 304.6, 297 303.9 C 297 302.9, 296.2 300.9, 290.9 288 C 289.9 285.5, 288.1 280.8, 286.9 277.5 C 283.8 268.8, 278.7 256.7, 277.6 255.2 C 276.3 253.4, 274.0 253.7, 273.3 255.7","D":"M 693.0 118.4 C 692.0 119.6, 692.1 122.0, 693.6 130.2 C 695.9 143.0, 696.2 177.3, 694.1 189 C 692.9 195.9, 688.8 210.0, 685.8 217.7 C 683.6 223.3, 683.3 223.2, 724.1 223.1 C 763.5 222.9, 788.2 224.3, 795 227.2 C 796.9 228.0, 802.3 229.9, 807 231.4 C 828.9 238.4, 854.6 257.4, 867.3 276.3 C 868.8 278.5, 870.6 281.1, 871.4 281.9 C 874.4 285.4, 883.8 305.1, 886.4 313.5 C 892.2 331.9, 892.8 334.8, 894.5 351.7 C 896.4 371.0, 894.8 396.7, 891.0 409.5 C 890.0 412.8, 888.0 419.7, 886.4 425 C 875.4 462.8, 842.1 496.8, 806 507.2 C 788.1 512.4, 788.4 512.3, 733.6 512.7 C 705.0 512.9, 680.6 512.8, 679.3 512.5 L 677 511.9 677 473.1 C 677 424.7, 677.7 426.7, 664.7 440 C 648.2 456.7, 635.0 476.8, 627.5 496.5 C 626.0 500.3, 624.2 504.9, 623.4 506.7 C 616.2 523.0, 617.0 549.1, 625.1 566.8 C 632.3 582.5, 651.2 602.1, 670 613.5 L 676.5 617.5 725 617.5 C 792.5 617.5, 811.6 615.5, 851.5 604.6 C 860.9 602.0, 862.9 601.3, 877.5 595.6 C 924.1 577.4, 965.6 543.0, 992.2 500.6 C 996.9 493.1, 1006.5 473.6, 1008.9 466.6 C 1009.9 463.8, 1011.7 459.0, 1012.9 456 C 1015.2 450.4, 1017.5 442.0, 1022.3 421.5 C 1027.0 401.8, 1028.6 371.9, 1026.5 344.7 C 1025.5 331.7, 1024.0 319.1, 1022.9 314.5 C 1021.8 310.1, 1019.6 301.3, 1018.0 295 C 1016.5 288.6, 1014.2 281.0, 1013.0 278 C 1011.7 274.9, 1009.9 270.2, 1009.0 267.5 C 1006.9 261.5, 996.9 241.2, 994.1 237.2 C 993.0 235.7, 990.5 231.8, 988.4 228.5 C 964.3 189.7, 916.9 152.4, 872.5 137.0 C 855.0 130.9, 848.4 128.9, 839.5 127.0 C 834 125.8, 825.9 124.0, 821.5 122.9 C 805.0 119.1, 774.0 117.0, 729.3 117.0 C 699.6 117.0, 694.0 117.2, 693.0 118.4","flame":"M 530.0 2.1 C 530.0 2.8, 532.4 4.5, 535.2 5.8 C 556.8 15.8, 577.0 42.0, 583.0 68 C 586.9 84.8, 586.6 116.4, 582.4 126.4 C 581.6 128.3, 581 130.8, 581 132.0 C 581 138.4, 564.2 166.7, 551.5 181.8 C 540.8 194.5, 506.6 227.4, 498.2 233.1 C 494.6 235.5, 463.5 263.6, 455.5 271.5 C 437.1 290.0, 427.8 301.9, 415.7 322.5 C 404.7 341.3, 393.4 371.1, 389.8 391 C 389.3 394.0, 388.1 399.6, 387.1 403.5 C 384.7 413.7, 384.8 447.0, 387.3 459.5 C 391.3 479.1, 396.5 495.6, 402.5 507.4 C 406.8 515.9, 413.3 527.6, 415.1 530 C 433.6 554.8, 454.6 575.2, 473.2 586.0 C 476.8 588.2, 480.1 590.4, 480.4 590.8 C 480.7 591.3, 483.5 592.9, 486.7 594.5 C 489.9 596.0, 493.6 598.0, 495 599.0 C 496.3 599.9, 501.1 601.9, 505.5 603.4 C 509.9 604.9, 513.9 606.5, 514.5 606.9 C 515.6 607.8, 529.3 612.0, 538.5 614.4 C 550.0 617.3, 553.6 615.7, 545.7 611 C 538.7 606.7, 520.8 588.2, 514.7 579 C 505.8 565.2, 498.4 549.8, 494.9 537.7 C 493.8 533.7, 492.2 528.4, 491.4 525.9 C 487.6 514.4, 487.1 478.2, 490.5 465.7 C 491.3 462.8, 492.4 458.2, 493.0 455.5 C 497.0 437.5, 507.5 415.4, 521.5 396.1 C 532.7 380.4, 564.4 345.4, 581.1 330.1 C 594.8 317.6, 631.4 276.6, 641.6 262.2 C 651.9 247.8, 663.8 224.6, 667.3 212.5 C 668.2 209.2, 669.8 203.8, 670.9 200.5 C 678.0 178.2, 677.8 121.8, 670.6 104.8 C 669.8 102.9, 668.0 97.6, 666.5 93.0 C 665.0 88.3, 662.2 81.9, 660.4 78.7 C 658.5 75.5, 656.9 72.5, 656.9 72.1 C 656.9 70.9, 645.2 55.9, 639.7 50.2 C 629.7 39.7, 615.7 28.6, 605.3 22.9 C 602.1 21.1, 598.8 19.1, 598 18.5 C 597.1 17.9, 594.0 16.3, 591 15.0 C 587.9 13.8, 583.7 11.9, 581.5 11.0 C 568.6 5.4, 553.9 1.9, 540.2 1.2 C 531.9 0.8, 530.0 0.9, 530.0 2.1 M 668.6 242.5 C 668.2 243.4, 668 245.4, 668 246.9 C 668 252.8, 664.0 268.8, 660.4 277.0 C 654.5 290.7, 652.4 294.5, 640.0 312.9 C 634.0 321.9, 619.8 337.1, 586.9 370 C 544.5 412.2, 534.1 425.1, 521.5 451.2 C 507.4 480.1, 507.4 519.1, 521.5 546.5 C 531.7 566.2, 549.0 585.8, 564.5 594.9 C 566.7 596.2, 569.4 598.0, 570.5 598.9 C 575.1 602.8, 596.1 609.5, 609.6 611.6 C 621.2 613.3, 637.1 612.9, 639.6 610.8 C 641.7 609.1, 641.2 606.2, 638.5 604.2 C 634.4 601.3, 622.7 587.0, 617.7 579 C 607.7 562.8, 605.4 546.6, 609.1 519.5 C 610.4 510.3, 613.5 497.2, 614.8 495.6 C 615.3 494.9, 617.1 491.1, 618.7 487 C 622.1 478.6, 630.9 462.8, 634.4 459 C 635.6 457.6, 638.2 454.2, 640.0 451.5 C 643.5 446.3, 652.1 436.1, 669.4 416.6 C 683.1 401.1, 693.8 383.8, 698.4 369.5 C 703.6 353.5, 704.1 350.9, 704.8 337.8 C 706.1 316.6, 704.2 299.2, 699.5 287 C 698.8 285.0, 697.2 280.8, 695.9 277.5 C 688.7 258.3, 671.1 235.9, 668.6 242.5"};
+const s=Math.max(.35,Math.min(1.6,cv.width*640/1080/1028));
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=Math.ceil(w);c.height=Math.ceil(h);return c};
+const W0=1028*s,H0=619*s,I={};
+const pth=k=>new Path2D(P[k]);
+const rn=(w,h,f)=>{const c=mk(w,h),x=c.getContext('2d'),d=x.createImageData(c.width,c.height);for(let i=0;i<d.data.length;i+=4)f(d.data,i);x.putImageData(d,0,0);return c};
+for(const k of ['A','D']){const c=mk(W0,H0),x=c.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fill(pth(k),'evenodd');I[k]=c}
+{const c=mk(W0,H0),x=c.getContext('2d');x.scale(s,s);const g=x.createLinearGradient(380,0,720,619);g.addColorStop(0,'#f7d77e');g.addColorStop(.45,'#e2b23e');g.addColorStop(1,'#c28d22');x.fillStyle=g;x.fill(pth('flame'),'evenodd');
+const gl=rn(256,256,(d,i)=>{const v=Math.random();d[i]=d[i+1]=d[i+2]=v>.5?255:0;d[i+3]=Math.abs(v-.5)*150});
+x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-atop';x.fillStyle=x.createPattern(gl,'repeat');x.fillRect(0,0,c.width,c.height);I.flame=c}
+{const g=.25,c=mk(1428*g,1019*g),x=c.getContext('2d');x.translate(200*g,200*g);x.scale(g,g);x.shadowColor='rgb(255,200,90)';x.shadowBlur=60*g*4;x.shadowOffsetX=5000*g;x.translate(-5000,0);x.fillStyle='#fff';x.fill(pth('flame'));I.glow=c}
+{const c=mk(320,568),x=c.getContext('2d');x.imageSmoothingEnabled=true;
+[[4,7,1],[8,14,.55],[16,28,.3],[32,57,.15]].forEach(([w,h,a])=>{const n=rn(w,h,(d,i)=>{d[i]=90;d[i+1]=140;d[i+2]=255;d[i+3]=Math.pow(Math.random(),2.2)*255});x.globalAlpha=a;x.drawImage(n,0,0,320,568)});
+I.fog=c}
+I.grain=rn(160,160,(d,i)=>{const v=128+(Math.random()+Math.random()+Math.random()-1.5)*90;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255});
+return I}
+const spT0=Date.now();let spDone=false,spRun=true;const spHj=new Date().toDateString();let spRap=false;try{spRap=localStorage.getItem('spDia')===spHj;localStorage.setItem('spDia',spHj)}catch(_){}const spOf=spRap?2.3:0;
+(function(){const cv=$('#spcv');if(!cv)return;const fit=()=>{const r=Math.min(devicePixelRatio||1,2.5);cv.width=Math.round(innerWidth*r);cv.height=Math.round(innerHeight*r)};fit();addEventListener('resize',fit);const red=matchMedia('(prefers-reduced-motion: reduce)').matches;go();function go(){let draw;try{draw=adIntro(cv,adAssets(cv))}catch(_){return}const t1=performance.now();const f=()=>{if(!spRun)return;draw(red?4:spOf+(performance.now()-t1)/1000);if(!red)requestAnimationFrame(f)};f();if(red){spRun=true;setInterval(()=>spRun&&draw(4),400)}}$('#splash').addEventListener('click',()=>{spMin=0;if(spDone)hideNow()})})();
+let spMin=matchMedia('(prefers-reduced-motion: reduce)').matches?900:spRap?1100:3600;
+function hideNow(){const el=$('#splash');if(el&&!el.classList.contains('out')){el.classList.add('out');setTimeout(()=>{spRun=false;el.remove()},600)}}
+function hideSplash(){if(spDone)return;spDone=true;const w=Math.max(0,spMin-(Date.now()-spT0));setTimeout(hideNow,w)}
+setTimeout(()=>{spDone=true;hideNow()},7000);
+const evRow=e=>`<button class="ev" data-ev="${esc(e.base||e.id)}" data-dt="${esc(e.data)}"${e.cong&&CC[e.cong]?` style="--cc:${ccol(e.cong)}"`:''}><div class="dt"><b>${toD(e.data).getDate()}</b><span>${MES[toD(e.data).getMonth()].slice(0,3)}</span></div><div><h3>${esc(e.titulo)}</h3><p>${e.semanal?'Todos os '+DIAS[toD(e.data).getDay()]:fmt(e.data,{weekday:'long'})}${e.hora?' · '+esc(e.hora):''}${e.local?' · '+esc(e.local):''}</p>${!cong?cpill(e.cong):''}</div>${IC('chev')}</button>`;
 const gr=s=>{const g=s.grupo||(s.itens?s.ministerio:'');return String(g||'').split(/\s*[,;]\s*|\s+e\s+/i).map(x=>x.trim()).filter(Boolean)};
 const ppl=s=>Array.isArray(s.pessoas)?s.pessoas.map(String):Array.isArray(s.itens)?s.itens.map(i=>(i.f?i.f+': ':'')+i.n):[];
 const hit=(s,n)=>!n||ppl(s).concat(gr(s)).some(x=>x.toLowerCase().includes(n));
@@ -548,7 +749,7 @@ $('#carr').addEventListener('scroll',e=>{const c=e.target,i=Math.round(c.scrollL
 function rEventos(){
   if(!loaded){$('#posters').innerHTML='<div class="sk" style="height:260px"></div><div class="sk" style="height:260px"></div>';return}
   const seen=new Set();const f=futuros().filter(e=>!e.base||(!seen.has(e.base)&&seen.add(e.base)));
-  $('#posters').innerHTML=f.length?f.map(e=>`<button class="post" data-ev="${esc(e.base||e.id)}" data-dt="${esc(e.data)}">${art(e)}<div class="cap"><b>${esc(e.titulo)}</b>${fmt(e.data,{weekday:'short',day:'numeric',month:'short'})}${e.hora?' · '+esc(e.hora):''}</div></button>`).join(''):'<div class="empty" style="grid-column:1/-1">Nenhum evento futuro.</div>';
+  $('#posters').innerHTML=f.length?f.map(e=>`<button class="post" data-ev="${esc(e.base||e.id)}" data-dt="${esc(e.data)}">${art(e)}<div class="cap"><b>${esc(e.titulo)}</b>${fmt(e.data,{weekday:'short',day:'numeric',month:'short'})}${e.hora?' · '+esc(e.hora):''}${!cong&&cpill(e.cong)?'<br>'+cpill(e.cong):''}</div></button>`).join(''):'<div class="empty" style="grid-column:1/-1">Nenhum evento futuro.</div>';
 }
 
 function rCal(){
@@ -566,8 +767,8 @@ function rCal(){
   let h=['D','S','T','Q','Q','S','S'].map(d=>`<div class="wd">${d}</div>`).join('');
   for(let i=0;i<first;i++)h+='<div class="day out"></div>';
   for(let d=1;d<=days;d++){const s=cy+'-'+pad(cm+1)+'-'+pad(d);const l=all.filter(e=>e.data===s);
-    h+=`<button class="day${s===TODAY?' td':''}${s===sel?' sel':''}" data-day="${s}" aria-label="${d} de ${MES[cm]}${l.length?', '+l.length+' evento(s)':''}">${d}<span class="ds">${l.slice(0,3).map(e=>`<i style="background:${s===sel?'#fff':mcol(e.ministerio)}"></i>`).join('')}</span></button>`}
-  $('#grid').innerHTML=h;
+    h+=`<button class="day${s===TODAY?' td':''}${s===sel?' sel':''}" data-day="${s}" aria-label="${d} de ${MES[cm]}${l.length?', '+l.length+' evento(s)':''}">${d}<span class="ds">${l.slice(0,3).map(e=>`<i style="background:${s===sel?'#fff':(e.cong&&CC[e.cong]?ccol(e.cong):mcol(e.ministerio))}"></i>`).join('')}</span></button>`}
+  $('#grid').innerHTML=h;$('#cleg').innerHTML=cong?'':Object.keys(CC).map(k=>`<span><i class="cdot" style="--cc:${CC[k]}"></i>${esc(k)}</span>`).join('');
   const list=sel&&sel.startsWith(cy+'-'+pad(cm+1))?all.filter(e=>e.data===sel):all.filter(e=>e.data.startsWith(cy+'-'+pad(cm+1)));
   $('#diaT').textContent=sel&&sel.startsWith(cy+'-'+pad(cm+1))?cap(fmt(sel,{weekday:'long',day:'numeric',month:'long'})):'Eventos de '+MES[cm];
   $('#diaL').innerHTML=list.length?list.map(evRow).join(''):'<div class="empty">Nada marcado.</div>';
@@ -646,10 +847,10 @@ const R={avisos:rAvisos,inicio:rInicio,eventos:rEventos,calendario:rCal,escalas:
 const VIEWS=Object.keys(R);
 function cur(){const h=location.hash.slice(1);return VIEWS.includes(h)?h:'inicio'}
 function rHead(){const c=cfg();$('#nome').textContent=c.nome;document.title=c.nome;if(cong&&!c.congs.includes(cong))cong='';
-  $('#cnome').textContent=cong||'Todas';const hh=new Date().getHours();$('#hi').textContent=hh<12?'Bom dia!':hh<18?'Boa tarde!':'Boa noite!';$('#hoje').textContent=cap(now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
+  $('#cnome').innerHTML=(cong?`<i class="cdot" style="--cc:${ccol(cong)};margin-right:6px"></i>`:'')+esc(cong||'Todas');const hh=new Date().getHours();$('#hi').textContent=hh<12?'Bom dia!':hh<18?'Boa tarde!':'Boa noite!';$('#hoje').textContent=cap(now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
   $$('.selC').forEach(sl=>{const v0=sl.value;sl.innerHTML=(sl.dataset.all?['Todas',...c.congs]:c.congs).map(x=>`<option>${esc(x)}</option>`).join('');if(v0&&[...sl.options].some(o=>o.value===v0))sl.value=v0});
   const f=$('#fig');if(f.hidden||!f.dataset.filled){f.elements.nome.value=c.nome;f.elements.congs.value=c.congs.join('\n');f.elements.info.value=Object.entries(c.info||{}).map(([k,v])=>[k,v.end||'',v.resp||''].join('; ')).join('\n');f.elements.codigo.value=c.codigo||'';f.elements.prog.value=(c.prog||[]).map(x=>[x.cong,DN[x.dia],x.hora,x.nome].join('; ')).join('\n');f.dataset.filled='1'}}
-function render(){rHead();rBadge();const v=cur();$('.app').classList.toggle('home',v==='inicio');$$('main section').forEach(s=>s.classList.toggle('on',s.id===v));$$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v||(a.dataset.v==='mais'&&['igreja','programacao','oracao','admin','avisos'].includes(v))));R[v]()}
+function render(){if(loaded)hideSplash();rHead();rBadge();const v=cur();$('.app').classList.toggle('home',v==='inicio');$$('main section').forEach(s=>s.classList.toggle('on',s.id===v));$$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v||(a.dataset.v==='mais'&&['igreja','programacao','oracao','admin','avisos'].includes(v))));R[v]()}
 addEventListener('hashchange',()=>{$('#modal').classList.remove('on');render();scrollTo(0,0)});
 
 function openEv(id,dt){const b=S.eventos.find(x=>x.id===id);if(!b)return;const e=dt?{...b,data:dt}:b;
@@ -659,7 +860,7 @@ function openEv(id,dt){const b=S.eventos.find(x=>x.id===id);if(!b)return;const e
   $('#fx').onclick=closeM;
   $('#cp').onclick=async()=>{const t=`*${e.titulo}*\n${when}${e.hora?' às '+e.hora:''}${e.local?'\n'+e.local:''}${e.desc?'\n\n'+e.desc:''}\n\n${cfg().nome}`;try{await navigator.clipboard.writeText(t);$('#cpm').textContent='Convite copiado — cole no WhatsApp.'}catch(_){$('#cpm').textContent='Não foi possível copiar aqui.'}};
 }
-function openCong(){const c=cfg();$('#sheet').innerHTML=`<div class="bd" style="padding-top:24px"><h2 style="font-size:22px;margin-bottom:6px">Sua congregação</h2><p style="color:var(--mut);margin:0 0 16px;font-size:14.5px">O app mostra os eventos e as escalas da congregação escolhida.</p>${['',...c.congs].map(x=>`<button class="opt${x===cong?' on':''}" data-cong="${esc(x)}">${esc(x||'Todas as congregações')}${x===cong?'<svg class="ic"><use href="#i-chev"/></svg>':''}</button>`).join('')}</div>`;$('#modal').classList.add('on')}
+function openCong(){const c=cfg();$('#sheet').innerHTML=`<div class="bd" style="padding-top:24px"><h2 style="font-size:22px;margin-bottom:6px">Sua congregação</h2><p style="color:var(--mut);margin:0 0 16px;font-size:14.5px">O app mostra os eventos e as escalas da congregação escolhida.</p>${['',...c.congs].map(x=>`<button class="opt${x===cong?' on':''}" data-cong="${esc(x)}"><span class="on-l"><i class="cdot" style="--cc:${ccol(x)}"></i>${esc(x||'Todas as congregações')}</span>${x===cong?'<svg class="ic"><use href="#i-chev"/></svg>':''}</button>`).join('')}</div>`;$('#modal').classList.add('on')}
 $('#cbtn').onclick=openCong;
 let uid=null;
 async function addMine(col,item,nome){const r=await SB.from('recebidos').insert({tipo:col==='oracoes'?'oracao':'ausencia',dados:{...item,nome:nome||item.nome||''}});if(r.error)throw mapErr(r.error);return 'ok'}
