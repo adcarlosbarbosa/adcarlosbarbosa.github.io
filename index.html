@@ -1040,7 +1040,8 @@ function pessoasDe(t){t=String(t||'').replace(/\s+/g,' ').trim();if(!t)return[];
   const cut=[0,...ix.filter(i=>i>0),t.length];const out=[];
   for(let i=0;i<cut.length-1;i++){let p=t.slice(cut[i],cut[i+1]).replace(/^[\s,;/–-]+|[\s,;.\/–-]+$/g,'');if(!p)continue;
     const mm=nrm1(p).match(/^(PR|PB|DC|DIAC|EV|PRA|PRESB|MISS|MIS|IRMA|IRM|COOP|AUX)(\s*\.\s*|\s+)/);
-    out.push(mm?TITS[mm[1]]+' '+tCase(p.slice(mm[0].length)):tCase(p))}
+    const rest=mm?p.slice(mm[0].length):p;const parts=rest.split(/\.\s+(?=\p{Lu})|\s*[,;]\s*|\s+\/\s+/u).map(x=>x.trim()).filter(Boolean);
+    parts.forEach((x,j)=>out.push((mm&&!j?TITS[mm[1]]+' ':'')+tCase(x)))}
   return out.filter(Boolean)}
 const temTit=s=>{TITRE.lastIndex=0;return TITRE.test(nrm1(' '+s))};
 function cultosConhecidos(cn){const c=cfg();return[...new Set([...[...document.querySelectorAll('#cultos option')].map(o=>o.value),...(c.prog||[]).map(p=>p.nome),...ALL.escalas.map(s=>s.culto)].filter(Boolean))].sort((a,b)=>b.length-a.length)}
@@ -1049,10 +1050,11 @@ function separa(cel,K){const linhas=cel.split('\n').map(s=>s.trim()).filter(Bool
   if(linhas.length>1&&!temTit(linhas[0]))return[tCase(linhas[0]),linhas.slice(1).join(' ')];
   TITRE.lastIndex=0;const m=TITRE.exec(nrm1(flat));if(m){const i=m.index+m[1].length;return[tCase(flat.slice(0,i).replace(/[\s\-–:]+$/,'')),flat.slice(i)]}
   return[tCase(flat),'']}
+const KWC=/\b(CULTO|EBD|ESCOLA|CONGRESSO|ENSAIO|FESTA|VIGILIA|CEIA|ORACAO|JOVENS|ADOLESCENTES|CRIANCAS|UMADCB|UFADCB|CIRCULO|BATISMO|CONFERENCIA|SEMINARIO|ANIVERSARIO|ENCONTRO|REUNIAO|CONSAGRACAO|LAR|QUINTA|CELEBRACAO|LOUVOR|MISSOES|BENCAO|PRACA|CORAL|GRUPO|SANTA|DOMINICAL|ESPECIAL|EVANGELISMO|ACAO|TARDE|MANHA|NOITE|SEMANA|CAMPANHA|VITORIA|FAMILIA|MILAGRE|CLAMOR|PALAVRA|ADORACAO|MULHERES|HOMENS|SENHORAS|VAROES|IRMAS)\b/;
 const DIAW=/^(DOMINGO|SEGUNDA|TERCA|QUARTA|QUINTA|SEXTA|SABADO|DOM|SEG|TER|QUA|QUI|SEX|SAB)(FEIRA|FEI|F)?$/;
 function anoPara(d,m){const h=new Date(),y=h.getFullYear();let best=y,bd=1e15;for(const yy of [y-1,y,y+1]){const df=Math.abs(new Date(yy,m-1,d)-h);if(df<bd){bd=df;best=yy}}return best}
 function linhas2escala(L,cn){const K=cultosConhecidos(cn),out=[],p2=v=>String(v).padStart(2,'0');
-  for(const cells0 of L.rows){let cells=cells0.map(c=>String(c||'').trim());let data='',hora='';
+  for(const cells0 of L.rows){let cells=cells0.map(c=>String(c||'').replace(/(\p{L}) (ffi|ffl|fi|fl|ff) (?=\p{Ll})/gu,'$1$2').trim());let data='',hora='';
     let di=cells.findIndex(c=>/(^|\D)\d{1,2}\s*[\/.\-]\s*\d{1,2}(\D|$)/.test(c));if(di<0)continue;
     {const m=cells[di].match(/(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?:\s*[\/.\-]\s*(\d{2,4}))?/);const d=+m[1],mo=+m[2];if(!(d>=1&&d<=31&&mo>=1&&mo<=12))continue;let y=m[3]?+m[3]:anoPara(d,mo);if(y<100)y+=2000;data=y+'-'+p2(mo)+'-'+p2(d);cells[di]=cells[di].replace(m[0],' ').trim()}
     for(let i=0;i<cells.length&&!hora;i++){const m=cells[i].match(/(^|\s)(\d{1,2})\s*[:hH]\s*(\d{2})?(?=\s|$|h)/);if(m&&+m[2]<24&&(i!==di||true)&&(m[3]||/h/i.test(cells[i]))){hora=p2(m[2])+':'+(m[3]||'00');cells[i]=cells[i].replace(m[0],' ').trim()}}
@@ -1061,7 +1063,7 @@ function linhas2escala(L,cn){const K=cultosConhecidos(cn),out=[],p2=v=>String(v)
       return mm&&!/(DA|DO|DE) /.test(nrm1(f).slice(mm[0].length,mm[0].length+3))&&(c.split('\n').length>1||mm[0].length===f.length)?f.slice(mm[0].length).trim():c}).filter(c=>c.replace(/[\s\-–.]/g,''));
     if(!cells.length)continue;
     let culto='',pes=[],grupo='';
-    const [c0,r0]=separa(cells[0],K);culto=c0;const sigla=x=>x.trim()&&x.trim().split(/\s+/).every(w=>ACR.has(nrm1(w))||!/[AEIOU]/.test(nrm1(w)));if(!temTit(r0)&&sigla(r0)){grupo=r0.trim()}else pes=pessoasDe(r0);
+    let [c0,r0]=separa(cells[0],K);if(c0&&!K.some(k=>nrm1(k)===nrm1(c0))&&!KWC.test(nrm1(c0))){r0=c0+(r0?'. '+r0:'');c0=''}culto=c0;const sigla=x=>x.trim()&&x.trim().split(/\s+/).every(w=>ACR.has(nrm1(w))||!/[AEIOU]/.test(nrm1(w)));if(!temTit(r0)&&sigla(r0)){grupo=r0.trim()}else pes=pessoasDe(r0);
     const resto=cells.slice(1);
     if(resto.length){const last=resto[resto.length-1];const lastP=temTit(last);
       const mid=lastP?resto:resto.slice(0,-1);if(!lastP)grupo=[grupo,tCase(last.replace(/\s+/g,' '))].filter(Boolean).join(', ');
@@ -1081,7 +1083,7 @@ const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
 async function lerPdf(buf){let pj;try{pj=await import(PDFJS+'pdf.min.mjs')}catch(_){throw{code:'net'}}pj.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.mjs';
   const doc=await pj.getDocument({data:new Uint8Array(buf)}).promise;const linhas=[];
   for(let p=1;p<=doc.numPages;p++){const pg=await doc.getPage(p);const tc=await pg.getTextContent();
-    const its=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5],h:Math.abs(i.transform[3])||10})).sort((a,b)=>b.y-a.y||a.x-b.x);
+    const its=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim().replace(/(\p{Ll}) ?(ffi|ffl|fi|fl|ff) (?=\p{Ll})/gu,'$1$2'),x:i.transform[4],y:i.transform[5],h:Math.abs(i.transform[3])||10})).sort((a,b)=>b.y-a.y||a.x-b.x);
     for(const it of its){const L=linhas[linhas.length-1];if(L&&L.p===p&&Math.abs(L.y-it.y)<=Math.max(2,it.h*.35))L.its.push(it);else linhas.push({p,y:it.y,h:it.h,its:[it]})}}
   linhas.forEach(l=>l.its.sort((a,b)=>a.x-b.x));
   const DT=/^\d{1,2}\s*[\/.\-]\s*\d{1,2}/,ehD=l=>DT.test(l.its[0].s);const dl=linhas.filter(ehD);
@@ -1096,7 +1098,8 @@ async function lerPdf(buf){let pj;try{pj=await import(PDFJS+'pdf.min.mjs')}catch
     if(ehD(l)){cur=cols.map(()=>'');rows.push(cur);poe(l);continue}
     if(!cur){pre.push(txt);continue}
     if(last&&l.p===last.p&&last.y-l.y<=l.h*1.8)poe(l);else{pos.push(txt);last=null}}
-  return{pre:[junta(pre)].filter(Boolean),pos:[junta(pos)].filter(Boolean),rows}}
+  const lig=c=>c.replace(/(\p{L}) (ffi|ffl|fi|fl|ff) (?=\p{Ll})/gu,'$1$2');
+  return{pre:[junta(pre)].filter(Boolean),pos:[junta(pos)].filter(Boolean),rows:rows.map(r=>r.map(lig))}}
 let IMP=null;
 function rImp(){const box=$('#impPrev');if(!IMP){box.innerHTML='';return}
   const {cong:cn,itens,msg}=IMP;const meses=[...new Set(itens.map(s=>s.data.slice(0,7)))];const mk=meses.sort((a,b)=>itens.filter(s=>s.data.startsWith(b)).length-itens.filter(s=>s.data.startsWith(a)).length)[0]||'';
