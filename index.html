@@ -157,6 +157,13 @@ nav svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stro
 .btn.gh{background:var(--rose);color:var(--wine)}
 form.adm{display:grid;gap:12px;background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
 form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(--mut)}
+#fimp details summary{font-size:13.5px;font-weight:700;color:var(--mut);cursor:pointer}#fimp details textarea{margin-top:8px;width:100%}
+#impPrev{display:grid;gap:10px}#impPrev:empty{display:none}.imph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-top:6px;border-top:1px solid var(--line)}.imph b{font-family:Archivo,system-ui;font-size:17px;color:var(--ink)}.imph span{font-size:13.5px;font-weight:700;color:var(--mut)}
+.imr{position:relative;display:grid;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 40px 10px 10px}.imr input,.imr textarea{font-size:14.5px;padding:8px 10px;min-height:0}.imr textarea{resize:vertical}.imr .two{gap:6px}
+.imx{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:#c2410c;font-weight:800;cursor:pointer}.imr .falta{border-color:#dc2626;box-shadow:0 0 0 2px #dc262633}
+#impPrev .row2,.apc .row2{display:flex;gap:8px}#impPrev .row2 .btn{flex:1}.ck{display:flex!important;gap:10px;align-items:center;font-weight:600!important}.ck input{width:22px;height:22px;flex:none}
+.apc .lt{margin-top:8px;display:grid;gap:4px;font-size:13.5px;max-height:260px;overflow:auto}.apc .lt div{padding:6px 8px;border-radius:8px;background:var(--bg)}.apc .lt b{color:var(--ink)}
+.orsep{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:13px;font-weight:700;margin:4px 2px}.orsep::before,.orsep::after{content:'';flex:1;height:1px;background:var(--line)}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 .li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
 .li button{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:none;color:#c2410c;font:700 13px Manrope,system-ui,sans-serif;cursor:pointer}
@@ -362,6 +369,16 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
         <label>Cor de fundo<input name="cor" type="color" value="#1546b8" style="height:48px;padding:4px"></label>
         <button class="btn">Publicar banner</button><div class="msg"></div>
       </form>
+      <form class="adm" id="fimp" hidden>
+        <b style="font-family:Archivo,system-ui;color:var(--ink);font-size:16px">Importar a escala do mês</b>
+        <p class="note" style="text-align:left;margin:0">Escolha o arquivo do <b>Word</b> ou do <b>Excel</b>, do jeito que ele chegou. O app lê a tabela e mostra tudo para você conferir antes de publicar.</p>
+        <label>Congregação<select name="cong" class="selC" required></select></label>
+        <label>Arquivo da escala (.docx ou .xlsx)<input name="arq" type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
+        <details><summary>Ou copie a tabela e cole aqui</summary><textarea name="txt" rows="4" placeholder="Selecione a tabela no Word ou Excel, copie e cole aqui"></textarea></details>
+        <button class="btn">Ler a escala</button><div class="msg"></div>
+        <div id="impPrev"></div>
+      </form>
+      <div class="orsep" id="orsep" hidden>ou lance um culto por vez</div>
       <form class="adm" id="fes" hidden>
         <div class="two"><label>Congregação<select name="cong" class="selC" required></select></label><label>Data<input name="data" type="date" required></label></div>
         <div class="two"><label>Horário<input name="hora" type="time"></label><label>Culto<input name="culto" required maxlength="60" list="cultos" placeholder="Culto da Vitória"></label></div>
@@ -440,7 +457,9 @@ function colRef(c){return{
     if(c==='equipe'){const r=await SB.from('equipe').insert({email:String(o.email).toLowerCase(),nome:o.nome,papel:o.papel});if(r.error)throw mapErr(r.error);refresh(c);return{id:o.email}}
     const {status='publicado',autor_email,id,...dados}=o;
     const r=await SB.from('conteudo').insert({tipo:c,dados,status,autor_email:eu.email}).select('id').single();
-    if(r.error)throw mapErr(r.error);refresh(c);return{id:r.data.id}}
+    if(r.error)throw mapErr(r.error);refresh(c);return{id:r.data.id}},
+  async addMany(list){const rows=list.map(o=>{const {status='publicado',autor_email,id,...dados}=o;return{tipo:c,dados,status,autor_email:eu.email}});
+    for(let i=0;i<rows.length;i+=50){const r=await SB.from('conteudo').insert(rows.slice(i,i+50));if(r.error)throw mapErr(r.error)}refresh(c)}
 }}
 function docRef(path){const [c,id]=path.split('/');return{
   async update(p){const cur=(ALL[c]||[]).find(x=>x.id===id)||{};const {status,id:_i,autor_email,...rest}={...cur,...p};const u={dados:rest,atualizado:new Date().toISOString()};if(p.status)u.status=p.status;
@@ -821,8 +840,9 @@ function rRecebidos(){const box=$('#rcL');
 async function upd(col,id,patch){if(db){await db.doc(col+'/'+id).update(patch)}else{setCol(col,ALL[col].map(x=>x.id===id?{...x,...patch}:x))}}
 const pend=()=>['avisos','eventos','banners','escalas'].flatMap(c=>ALL[c].filter(x=>x.status==='pendente'&&!(c==='banners'&&x.evento)).map(x=>({...x,_c:c})));
 const TIPO={avisos:'Aviso',eventos:'Evento',banners:'Banner',escalas:'Escala'};
-function rAprovar(){const l=pend();
-  $('#apL').innerHTML=l.length?l.map(x=>`<div class="apc"><div class="k">${TIPO[x._c]} · ${esc(x.cong||'Todas')}</div><h4>${esc(x.titulo||x.culto||'Sem título')}</h4><div class="by">Enviado por ${esc(x.autor||'líder')}${x.data?' · '+fmt(x.data,{day:'numeric',month:'short'})+(x.hora?' às '+esc(x.hora):''):''}</div>${hasMedia(x)?`<div class="pv">${media(x,x.titulo||'')}</div>`:''}${x.texto||x.desc?`<div class="txt">${esc(x.texto||x.desc)}</div>`:''}${x.pessoas&&x.pessoas.length?`<div class="txt">${esc(x.pessoas.join(' · '))}${x.grupo?' — '+esc(x.grupo):''}</div>`:''}
+function rAprovar(){const l0=pend();const lotes={};const l=[];for(const x of l0){if(x._c==='escalas'&&x.lote){if(!lotes[x.lote]){lotes[x.lote]=[];l.push({_lote:x.lote,_c:'escalas',cong:x.cong,autor:x.autor,id:x.lote})}lotes[x.lote].push(x)}else l.push(x)}
+  $('#apL').innerHTML=l.length?l.map(x=>x._lote?(()=>{const it=lotes[x._lote].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));const mk=it[0].data.slice(0,7);return `<div class="apc"><div class="k">Escala do mês · ${esc(x.cong||'Todas')}</div><h4>${MES[+mk.slice(5)-1]} ${mk.slice(0,4)} · ${it.length} cultos</h4><div class="by">Enviado por ${esc(x.autor||'líder')}</div><div class="lt">${it.map(s=>`<div><b>${fmt(s.data,{day:'numeric',month:'short'})}${s.hora?' '+esc(s.hora):''} · ${esc(s.culto)}</b>${s.pessoas&&s.pessoas.length?'<br>'+esc(s.pessoas.join(' · ')):''}${s.grupo?' — '+esc(s.grupo):''}</div>`).join('')}</div>
+  <div class="row2"><button class="btn" data-apvl="${esc(x._lote)}">Aprovar todos (${it.length})</button><button class="btn no" data-rcs="lote/${esc(x._lote)}">Recusar</button></div><div class="rz" hidden style="margin-top:10px"><textarea placeholder="Motivo (o líder vai ver)" maxlength="300"></textarea><button class="btn no" style="width:100%;margin-top:8px" data-rcl="${esc(x._lote)}">Confirmar recusa</button></div></div>`})():`<div class="apc"><div class="k">${TIPO[x._c]} · ${esc(x.cong||'Todas')}</div><h4>${esc(x.titulo||x.culto||'Sem título')}</h4><div class="by">Enviado por ${esc(x.autor||'líder')}${x.data?' · '+fmt(x.data,{day:'numeric',month:'short'})+(x.hora?' às '+esc(x.hora):''):''}</div>${hasMedia(x)?`<div class="pv">${media(x,x.titulo||'')}</div>`:''}${x.texto||x.desc?`<div class="txt">${esc(x.texto||x.desc)}</div>`:''}${x.pessoas&&x.pessoas.length?`<div class="txt">${esc(x.pessoas.join(' · '))}${x.grupo?' — '+esc(x.grupo):''}</div>`:''}
   <div class="row2"><button class="btn" data-apv="${x._c}/${esc(x.id)}">Aprovar e publicar</button><button class="btn no" data-rcs="${x._c}/${esc(x.id)}">Recusar</button></div><div class="rz" hidden style="margin-top:10px"><textarea placeholder="Motivo (o líder vai ver)" maxlength="300"></textarea><button class="btn no" style="width:100%;margin-top:8px" data-rcok="${x._c}/${esc(x.id)}">Confirmar recusa</button></div></div>`).join(''):'<div class="empty">Nada aguardando aprovação.</div>'}
 function rEquipe(){const eq=S.equipe||[];
   $('#eqL').innerHTML=`<div class="card"><h3>Quem pode entrar na área da liderança</h3><p class="note" style="text-align:left;margin:0 0 6px">Cada pessoa entra com a própria conta Google. Só os e-mails desta lista conseguem publicar.</p>${eq.length?eq.map(x=>`<div class="li"><div><b>${esc(x.nome||x.email)}</b><br><span style="color:var(--mut)">${esc(x.email)} · ${esc((PAPEIS[x.papel]||{}).nome||x.papel)}</span></div><button data-eqdel="${esc(x.id)}">Remover</button></div>`).join(''):'<div class="li"><small>Ninguém cadastrado ainda.</small></div>'}</div>
@@ -836,9 +856,9 @@ function rAdmin(){
   $$('[data-ad]').forEach(b=>b.hidden=!TABS[papel].includes(b.dataset.ad));
   const np=pend().length;$('#apN').textContent=np?String(np):'';
   $('#apL').hidden=adTab!=='ap';$('#eqL').hidden=adTab!=='eq';
-  if(adTab==='ap'||adTab==='eq'){$$('#adm form.adm').forEach(f=>{if(f.id!=='feq')f.hidden=true});$('#rcL').hidden=true;$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;$$('[data-ad]').forEach(b=>b.classList.toggle('on',b.dataset.ad===adTab));adTab==='ap'?rAprovar():rEquipe();return}
+  if(adTab==='ap'||adTab==='eq'){$$('#adm form.adm').forEach(f=>{if(f.id!=='feq')f.hidden=true});$('#orsep').hidden=true;$('#rcL').hidden=true;$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;$$('[data-ad]').forEach(b=>b.classList.toggle('on',b.dataset.ad===adTab));adTab==='ap'?rAprovar():rEquipe();return}
   $$('[data-ad]').forEach(b=>b.classList.toggle('on',b.dataset.ad===adTab));
-  $('#fav').hidden=adTab!=='av';$('#fev').hidden=adTab!=='ev';$('#fba').hidden=adTab!=='ba';$('#fes').hidden=adTab!=='es';$('#fmm').hidden=adTab!=='es';$('#fig').hidden=adTab!=='ig';$('#rcL').hidden=adTab!=='rc';if(adTab==='rc'){rRecebidos();$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;return}if(adTab==='ig'){$('#fig').dataset.filled='';$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;return}$('#admL').previousElementSibling.hidden=false;$('#admL').previousElementSibling.textContent=papel==='lider'?'Publicados e enviados':'Publicados';
+  $('#fav').hidden=adTab!=='av';$('#fev').hidden=adTab!=='ev';$('#fba').hidden=adTab!=='ba';$('#fes').hidden=adTab!=='es';$('#fimp').hidden=adTab!=='es';$('#orsep').hidden=adTab!=='es';$('#fmm').hidden=adTab!=='es';$('#fig').hidden=adTab!=='ig';$('#rcL').hidden=adTab!=='rc';if(adTab==='rc'){rRecebidos();$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;return}if(adTab==='ig'){$('#fig').dataset.filled='';$('#admL').innerHTML='';$('#admL').previousElementSibling.hidden=true;return}$('#admL').previousElementSibling.hidden=false;$('#admL').previousElementSibling.textContent=papel==='lider'?'Publicados e enviados':'Publicados';
   $('#mins').innerHTML=[...new Set(['Geral','Louvor','Recepção','Mídia','Infantil','Jovens',...S.escalas.map(s=>s.ministerio),...S.eventos.map(e=>e.ministerio)].filter(Boolean))].map(m=>`<option value="${esc(m)}">`).join('');
   $('#grupos').innerHTML=[...new Set(S.escalas.flatMap(gr))].map(m=>`<option value="${esc(m)}">`).join('');
   const col={av:'avisos',ev:'eventos',ba:'banners',es:'escalas'}[adTab];
@@ -897,11 +917,13 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeM()});
 addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-entrar],[data-sair],[data-papel],[data-apv],[data-rcs],[data-rcok],[data-eqdel],[data-avid],[data-aus],[data-gom],[data-cong],[data-ev],[data-go],[data-day],[data-min],[data-cv],[data-ad],[data-del]');if(!t)return;
+  const t=e.target.closest('[data-entrar],[data-sair],[data-papel],[data-apvl],[data-rcl],[data-apv],[data-rcs],[data-rcok],[data-eqdel],[data-avid],[data-aus],[data-gom],[data-cong],[data-ev],[data-go],[data-day],[data-min],[data-cv],[data-ad],[data-del]');if(!t)return;
   const d=t.dataset;
   if(d.entrar){t.disabled=true;entrarGoogle()}
   else if(d.sair){sair()}
   else if(d.papel){}
+  else if(d.apvl){t.disabled=true;const by=eu.nome||eu.email;try{for(const x of ALL.escalas.filter(x=>x.lote===d.apvl&&x.status==='pendente'))await upd('escalas',x.id,{status:'publicado',aprovadoPor:by});render()}catch(_){t.disabled=false;t.textContent='Erro'}}
+  else if(d.rcl){const mot=t.closest('.rz').querySelector('textarea').value.trim();t.disabled=true;try{for(const x of ALL.escalas.filter(x=>x.lote===d.rcl&&x.status==='pendente'))await upd('escalas',x.id,{status:'recusado',motivo:mot});render()}catch(_){t.disabled=false}}
   else if(d.apv){const [c,id]=d.apv.split('/');t.disabled=true;const by=eu.nome||eu.email;try{await upd(c,id,{status:'publicado',aprovadoPor:by});if(c==='eventos')for(const bn of ALL.banners.filter(x=>x.evento===id&&x.status==='pendente'))await upd('banners',bn.id,{status:'publicado',aprovadoPor:by});render()}catch(_){t.disabled=false;t.textContent='Erro'}}
   else if(d.rcs){const z=t.closest('.apc').querySelector('.rz');z.hidden=false;z.querySelector('textarea').focus()}
   else if(d.rcok){const [c,id]=d.rcok.split('/');const mot=t.closest('.rz').querySelector('textarea').value.trim();t.disabled=true;try{await upd(c,id,{status:'recusado',motivo:mot});if(c==='eventos')for(const bn of ALL.banners.filter(x=>x.evento===id))await upd('banners',bn.id,{status:'recusado',motivo:mot});render()}catch(_){t.disabled=false}}
@@ -951,6 +973,118 @@ submit($('#fes'),'escalas',fd=>({cong:v(fd,'cong'),data:v(fd,'data'),hora:v(fd,'
 $('#fmm').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,m=f.querySelector('.msg');if(!db){m.textContent='Os dados não estão disponíveis nesta visualização.';return}
   const c=f.elements.cong.value,mes=f.elements.mes.value;if(!/^\d{4}-\d{2}$/.test(mes))return;const id=(c+'-'+mes).normalize('NFD').replace(/[^A-Za-z0-9-]/g,'');
   m.textContent='Salvando…';try{const t=f.elements.texto.value.trim();if(t)await db.doc('meses/'+id).set({cong:c,mes,texto:t});else await db.doc('meses/'+id).delete();m.textContent='Salvo!'}catch(err){m.textContent='Não deu certo. Tente de novo.'}});
+
+/* ===== importar escala (Word/Excel) ===== */
+async function zipAbre(buf){const dv=new DataView(buf);let e=buf.byteLength-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw{code:'fmt'};
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const F={},td=new TextDecoder();
+  for(let i=0;i<n;i++){const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);F[td.decode(new Uint8Array(buf,p+46,nl))]={meth,csz,off};p+=46+nl+xl+cl}
+  return{nomes:Object.keys(F),async get(nm){const f=F[nm];if(!f)return null;const ln=dv.getUint16(f.off+26,true),lx=dv.getUint16(f.off+28,true);const d=new Uint8Array(buf,f.off+30+ln+lx,f.csz);
+    if(f.meth===0)return td.decode(d);const out=await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();return td.decode(out)}}}
+const xmlDe=s=>new DOMParser().parseFromString(s,'application/xml');
+async function lerDocx(z){const x=xmlDe(await z.get('word/document.xml')||'');const body=x.getElementsByTagName('w:body')[0];if(!body)throw{code:'fmt'};
+  const P=p=>{let s='';for(const el of p.getElementsByTagName('*')){const t=el.tagName;if(t==='w:t')s+=el.textContent;else if(t==='w:tab'||t==='w:br')s+=' '}return s.replace(/\s+/g,' ').trim()};
+  const C=tc=>[...tc.getElementsByTagName('w:p')].map(P).filter(Boolean).join('\n');
+  const pre=[],pos=[],rows=[];let viu=false;
+  for(const ch of body.children){if(ch.tagName==='w:tbl'){viu=true;for(const tr of ch.getElementsByTagName('w:tr'))rows.push([...tr.children].filter(c=>c.tagName==='w:tc').map(C))}
+    else if(ch.tagName==='w:p'){const t=P(ch);if(t)(viu?pos:pre).push(t)}}
+  if(!rows.length)for(const t of [...pre,...pos])rows.push(t.split(/\t| {2,}/));
+  return{pre,pos,rows}}
+async function lerXlsx(z){const ss=await z.get('xl/sharedStrings.xml');const SS=ss?[...xmlDe(ss).getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join('')):[];
+  const sh=z.nomes.filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a,b)=>parseInt(a.match(/\d+/))-parseInt(b.match(/\d+/)))[0];if(!sh)throw{code:'fmt'};
+  const x=xmlDe(await z.get(sh)),rows=[],p2=v=>String(v).padStart(2,'0');
+  for(const r of x.getElementsByTagName('row')){const a=[];for(const c of r.getElementsByTagName('c')){const col=(c.getAttribute('r')||'').replace(/\d+/g,'').split('').reduce((s,ch)=>s*26+ch.charCodeAt(0)-64,0)-1;
+      const t=c.getAttribute('t'),v=c.getElementsByTagName('v')[0];let val='';
+      if(t==='s')val=SS[+(v&&v.textContent)]||'';else if(t==='inlineStr')val=[...c.getElementsByTagName('t')].map(q=>q.textContent).join('');
+      else if(v){val=v.textContent;const n=+val;if(t!=='str'&&t!=='e'&&!isNaN(n)){if(n>20000&&n<80000){const d=new Date(Date.UTC(1899,11,30)+Math.floor(n)*864e5);val=p2(d.getUTCDate())+'/'+p2(d.getUTCMonth()+1)+'/'+d.getUTCFullYear()}else if(n>0&&n<1){const m=Math.round(n*1440);val=p2(Math.floor(m/60))+':'+p2(m%60)}}}
+      a[col>=0?col:a.length]=val}
+    rows.push(Array.from(a,v=>v||''))}
+  return{pre:[],pos:[],rows}}
+const nrm1=s=>[...String(s)].map(c=>(c.normalize('NFD')[0]||'').toUpperCase()).join('');
+const TITS={PR:'Pr.',PB:'Pb.',DC:'Dc.',DIAC:'Diác.',EV:'Ev.',PRA:'Pra.',PRESB:'Presb.',MISS:'Miss.',MIS:'Miss.',IRMA:'Irmã',IRM:'Irm.',COOP:'Coop.',AUX:'Aux.'};
+const TITRE=/(^|\s)(PR|PB|DC|DIAC|EV|PRA|PRESB|MISS|MIS|IRMÃ|IRMA|IRM|COOP|AUX)(\s*\.\s*|\s+)(?=[A-ZÀ-Ý])/g;
+const ACR=new Set(['EBD','UMADCB','UFADCB','ACSA','CIBE','UMADEB','AD','II','III','IV']);
+function tCase(s){if(s!==s.toUpperCase())return s.trim();
+  return s.toLowerCase().replace(/(^|[\s\-(/])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/ (Da|De|Do|Das|Dos|E|Na|No)(?= )/g,m=>m.toLowerCase())
+    .replace(/\b\p{L}+\b/gu,w=>ACR.has(nrm1(w))||(w.length>=2&&!/[aeiouáéíóúâêôãõà]/i.test(w))?w.toUpperCase():w).trim()}
+function pessoasDe(t){t=String(t||'').replace(/\s+/g,' ').trim();if(!t)return[];const ix=[];let m;TITRE.lastIndex=0;const T=nrm1(t);
+  while((m=TITRE.exec(T)))ix.push(m.index+m[1].length);
+  const cut=[0,...ix.filter(i=>i>0),t.length];const out=[];
+  for(let i=0;i<cut.length-1;i++){let p=t.slice(cut[i],cut[i+1]).replace(/^[\s,;/–-]+|[\s,;.\/–-]+$/g,'');if(!p)continue;
+    const mm=nrm1(p).match(/^(PR|PB|DC|DIAC|EV|PRA|PRESB|MISS|MIS|IRMA|IRM|COOP|AUX)(\s*\.\s*|\s+)/);
+    out.push(mm?TITS[mm[1]]+' '+tCase(p.slice(mm[0].length)):tCase(p))}
+  return out.filter(Boolean)}
+const temTit=s=>{TITRE.lastIndex=0;return TITRE.test(nrm1(' '+s))};
+function cultosConhecidos(cn){const c=cfg();return[...new Set([...[...document.querySelectorAll('#cultos option')].map(o=>o.value),...(c.prog||[]).map(p=>p.nome),...ALL.escalas.map(s=>s.culto)].filter(Boolean))].sort((a,b)=>b.length-a.length)}
+function separa(cel,K){const linhas=cel.split('\n').map(s=>s.trim()).filter(Boolean),flat=linhas.join(' ').replace(/\s+/g,' ');const F=nrm1(flat);
+  for(const k of K){const N=nrm1(k).replace(/\s+/g,' ');if(F===N||F.startsWith(N+' ')||F.startsWith(N+'-')||F.startsWith(N+':'))return[k,flat.slice(N.length)]}
+  if(linhas.length>1&&!temTit(linhas[0]))return[tCase(linhas[0]),linhas.slice(1).join(' ')];
+  TITRE.lastIndex=0;const m=TITRE.exec(nrm1(flat));if(m){const i=m.index+m[1].length;return[tCase(flat.slice(0,i).replace(/[\s\-–:]+$/,'')),flat.slice(i)]}
+  return[tCase(flat),'']}
+const DIAW=/^(DOMINGO|SEGUNDA|TERCA|QUARTA|QUINTA|SEXTA|SABADO|DOM|SEG|TER|QUA|QUI|SEX|SAB)(FEIRA|FEI|F)?$/;
+function anoPara(d,m){const h=new Date(),y=h.getFullYear();let best=y,bd=1e15;for(const yy of [y-1,y,y+1]){const df=Math.abs(new Date(yy,m-1,d)-h);if(df<bd){bd=df;best=yy}}return best}
+function linhas2escala(L,cn){const K=cultosConhecidos(cn),out=[],p2=v=>String(v).padStart(2,'0');
+  for(const cells0 of L.rows){let cells=cells0.map(c=>String(c||'').trim());let data='',hora='';
+    let di=cells.findIndex(c=>/(^|\D)\d{1,2}\s*[\/.\-]\s*\d{1,2}(\D|$)/.test(c));if(di<0)continue;
+    {const m=cells[di].match(/(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?:\s*[\/.\-]\s*(\d{2,4}))?/);const d=+m[1],mo=+m[2];if(!(d>=1&&d<=31&&mo>=1&&mo<=12))continue;let y=m[3]?+m[3]:anoPara(d,mo);if(y<100)y+=2000;data=y+'-'+p2(mo)+'-'+p2(d);cells[di]=cells[di].replace(m[0],' ').trim()}
+    for(let i=0;i<cells.length&&!hora;i++){const m=cells[i].match(/(^|\s)(\d{1,2})\s*[:hH]\s*(\d{2})?(?=\s|$|h)/);if(m&&+m[2]<24&&(i!==di||true)&&(m[3]||/h/i.test(cells[i]))){hora=p2(m[2])+':'+(m[3]||'00');cells[i]=cells[i].replace(m[0],' ').trim()}}
+    cells=cells.map(c=>{const w=c.split('\n').map(s=>s.trim()).filter(Boolean);const j=nrm1(w.join('')).replace(/[^A-Z]/g,'');if(DIAW.test(j))return'';
+      const f=c.replace(/\s+/g,' ');const mm=nrm1(f).match(/^(DOMINGO|SEGUNDA|TERCA|QUARTA|QUINTA|SEXTA|SABADO)(-?\s?FEIRA)?\b\s*/);
+      return mm&&!/(DA|DO|DE) /.test(nrm1(f).slice(mm[0].length,mm[0].length+3))&&(c.split('\n').length>1||mm[0].length===f.length)?f.slice(mm[0].length).trim():c}).filter(c=>c.replace(/[\s\-–.]/g,''));
+    if(!cells.length)continue;
+    let culto='',pes=[],grupo='';
+    const [c0,r0]=separa(cells[0],K);culto=c0;pes=pessoasDe(r0);
+    const resto=cells.slice(1);
+    if(resto.length){const last=resto[resto.length-1];const lastP=temTit(last);
+      const mid=lastP?resto:resto.slice(0,-1);if(!lastP)grupo=tCase(last.replace(/\s+/g,' '));
+      for(const c of mid)pes.push(...pessoasDe(c))}
+    if(!culto&&!pes.length)continue;
+    out.push({data,hora,culto,pessoas:pes.slice(0,30),grupo})}
+  // completar culto/hora pela programação
+  const pg=(cfg().prog||[]).filter(p=>p.cong===cn);
+  for(const s of out){const wd=new Date(s.data+'T12:00').getDay();const doDia=pg.filter(p=>p.dia===wd);
+    if(!s.culto){const usados=out.filter(o=>o!==s&&o.data===s.data).map(o=>nrm1(o.culto)).filter(Boolean);const igual=(a,b)=>{const x=nrm1(a),y=nrm1(b);return x===y||x.includes(y)||y.includes(x)};const c=(s.hora&&doDia.find(p=>p.hora===s.hora))||doDia.find(p=>!usados.some(u=>igual(u,p.nome)))||doDia[0];if(c){s.culto=c.nome;if(!s.hora)s.hora=c.hora}}
+    if(!s.hora&&s.culto){const c=doDia.find(p=>nrm1(p.nome)===nrm1(s.culto))||pg.find(p=>nrm1(p.nome)===nrm1(s.culto))||(/^EBD/.test(nrm1(s.culto))&&doDia.find(p=>/EBD|ESCOLA/.test(nrm1(p.nome))));if(c)s.hora=c.hora}
+    const gs=[...new Set(ALL.escalas.flatMap(gr))];if(s.grupo){const g=gs.find(x=>nrm1(x)===nrm1(s.grupo));if(g)s.grupo=g}}
+  out.sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  const msg=[...(L.pre||[]).filter(t=>!/ESCALA/.test(nrm1(t))),...(L.pos||[])].join('\n\n').slice(0,800);
+  return{itens:out,msg}}
+let IMP=null;
+function rImp(){const box=$('#impPrev');if(!IMP){box.innerHTML='';return}
+  const {cong:cn,itens,msg}=IMP;const meses=[...new Set(itens.map(s=>s.data.slice(0,7)))];const mk=meses.sort((a,b)=>itens.filter(s=>s.data.startsWith(b)).length-itens.filter(s=>s.data.startsWith(a)).length)[0]||'';
+  IMP.mes=mk;const [yy,mm]=mk.split('-');const ja=ALL.escalas.filter(s=>s.cong===cn&&typeof s.data==='string'&&meses.some(m=>s.data.startsWith(m)));const podeApagar=papel!=='lider';
+  box.innerHTML=`<div class="imph"><b>${itens.length} culto${itens.length===1?'':'s'} encontrado${itens.length===1?'':'s'}</b><span>${esc(cn)}${mk?' · '+MES[+mm-1]+' '+yy:''}</span></div>
+  <p class="note" style="text-align:left;margin:0">Confira cada culto. Pode corrigir qualquer campo ou tirar uma linha antes de publicar.</p>
+  ${itens.map((s,i)=>`<div class="imr" data-i="${i}"><div class="two"><input type="date" name="data" value="${esc(s.data)}"><input type="time" name="hora" value="${esc(s.hora)}"></div>
+    <input name="culto" value="${esc(s.culto)}" placeholder="Culto" list="cultos" maxlength="60"${s.culto?'':' class="falta"'}>
+    <textarea name="pessoas" rows="${Math.max(1,s.pessoas.length)}" placeholder="Escalados (um por linha)">${esc(s.pessoas.join('\n'))}</textarea>
+    <input name="grupo" value="${esc(s.grupo)}" placeholder="Louvor / grupo" list="grupos" maxlength="80"><button type="button" class="imx" data-impx="${i}" aria-label="Tirar esta linha">✕</button></div>`).join('')}
+  <label style="margin-top:4px">Mensagem do mês (aparece no topo da escala)<textarea name="msg" rows="3" maxlength="800">${esc(msg)}</textarea></label>
+  ${ja.length?(podeApagar?`<label class="ck"><input type="checkbox" name="subst"> Apagar as ${ja.length} escala${ja.length===1?'':'s'} que já estão lançadas da ${esc(cn)} nesse mês</label>`:`<p class="note" style="text-align:left;margin:0">Já existem ${ja.length} escalas da ${esc(cn)} nesse mês. Elas continuam lá.</p>`):''}
+  <div class="row2"><button type="button" class="btn" data-imppub="1">${papel==='lider'?'Enviar para aprovação':'Publicar escala'} (${itens.length})</button><button type="button" class="btn gh" data-impcan="1">Cancelar</button></div><div class="msg" id="impMsg"></div>`}
+function impLer(){const box=$('#impPrev');$$('#impPrev .imr').forEach(r=>{const s=IMP.itens[+r.dataset.i];const q=n=>r.querySelector(`[name=${n}]`).value.trim();s.data=q('data');s.hora=q('hora');s.culto=q('culto');s.pessoas=q('pessoas').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,30);s.grupo=q('grupo')});
+  const t=box.querySelector('[name=msg]');IMP.msg=t?t.value.trim():'';const sb=box.querySelector('[name=subst]');IMP.subst=!!(sb&&sb.checked)}
+async function impPublicar(btn){impLer();const m=$('#impMsg');const bad=IMP.itens.find(s=>!/^\d{4}-\d{2}-\d{2}$/.test(s.data)||!s.culto);if(bad){m.textContent='Falta a data ou o nome do culto em alguma linha (marcada em vermelho).';$$('#impPrev .imr').forEach(r=>{const s=IMP.itens[+r.dataset.i];r.querySelector('[name=culto]').classList.toggle('falta',!s.culto)});return}
+  btn.disabled=true;m.textContent='Publicando…';const cn=IMP.cong,lote='imp'+Date.now().toString(36),agora=new Date().toISOString();
+  const lista=IMP.itens.map(s=>({...stamp({cong:cn,data:s.data,hora:s.hora,culto:s.culto,pessoas:s.pessoas,grupo:s.grupo,destaque:false,lote}),criado:agora}));
+  try{if(IMP.subst&&papel!=='lider'){const meses=[...new Set(lista.map(s=>s.data.slice(0,7)))];for(const s of ALL.escalas.filter(x=>x.cong===cn&&typeof x.data==='string'&&meses.some(mm=>x.data.startsWith(mm)))){if(db)await db.doc('escalas/'+s.id).delete();else setCol('escalas',ALL.escalas.filter(x=>x.id!==s.id))}}
+    if(db){const ref=db.collection('escalas');if(ref.addMany)await ref.addMany(lista);else for(const o of lista)await ref.add(o)}
+    else setCol('escalas',[...ALL.escalas,...lista.map((o,i)=>({...o,id:lote+'-'+i}))]);
+    if(IMP.msg&&IMP.mes&&db&&papel!=='lider'){const id=(cn+'-'+IMP.mes).normalize('NFD').replace(/[^A-Za-z0-9-]/g,'');try{await db.doc('meses/'+id).set({cong:cn,mes:IMP.mes,texto:IMP.msg})}catch(_){}}
+    else if(IMP.msg&&IMP.mes&&!db){S.meses=[...(S.meses||[]).filter(x=>!(x.cong===cn&&x.mes===IMP.mes)),{cong:cn,mes:IMP.mes,texto:IMP.msg}]}
+    const n=lista.length,pend=papel==='lider',mk=IMP.mes;IMP=null;$('#fimp').reset();rImp();$('#fimp .msg').textContent=pend?`Enviado! ${n} cultos aguardando aprovação do pastor.`:`Pronto! ${n} cultos publicados na escala.`;
+    if(mk){const [y,mo]=mk.split('-');ey=+y;emo=+mo-1}render()}
+  catch(err){btn.disabled=false;m.textContent=err&&err.code==='invalid_argument'?'Você não tem permissão para publicar.':'Não deu certo. Tente de novo.'}}
+$('#fimp').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,m=f.querySelector('.msg');m.textContent='';const cn=f.elements.cong.value;const arq=f.elements.arq.files[0],txt=f.elements.txt.value.trim();
+  if(!arq&&!txt){m.textContent='Escolha o arquivo da escala (ou cole a tabela).';return}
+  m.textContent='Lendo a escala…';try{let L;
+    if(arq){const nm=arq.name.toLowerCase();if(/\.(doc|xls)$/.test(nm))throw{code:'velho'};if(/\.pdf$/.test(nm))throw{code:'pdf'};const z=await zipAbre(await arq.arrayBuffer());L=z.nomes.includes('word/document.xml')?await lerDocx(z):z.nomes.some(n=>n.startsWith('xl/'))?await lerXlsx(z):null;if(!L)throw{code:'fmt'}}
+    else L={pre:[],pos:[],rows:txt.split(/\r?\n/).map(l=>l.split('\t'))};
+    const r=linhas2escala(L,cn);if(!r.itens.length)throw{code:'vazio'};IMP={cong:cn,...r};m.textContent='';rImp();$('#impPrev').scrollIntoView({behavior:'smooth',block:'start'})}
+  catch(err){const c=err&&err.code;IMP=null;rImp();m.textContent=c==='velho'?'Esse arquivo é do formato antigo. Abra no Word/Excel e salve como .docx ou .xlsx.':c==='pdf'?'PDF não dá para ler. Use o arquivo do Word ou do Excel.':c==='vazio'?'Não encontrei nenhuma data na tabela. Confira se é o arquivo da escala.':'Não consegui ler esse arquivo. Tente salvar de novo como .docx ou .xlsx.'}});
+$('#impPrev').addEventListener('click',e=>{const t=e.target.closest('[data-impx],[data-imppub],[data-impcan]');if(!t)return;
+  if(t.dataset.impx!==undefined){impLer();IMP.itens.splice(+t.dataset.impx,1);if(!IMP.itens.length)IMP=null;rImp()}
+  else if(t.dataset.imppub)impPublicar(t);else{IMP=null;$('#fimp').reset();rImp()}});
+/* ===== fim importar ===== */
 
 $('#fig').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,m=f.querySelector('.msg');if(!db){m.textContent='Os dados não estão disponíveis nesta visualização.';return}
   const congs=[...new Set(f.elements.congs.value.split('\n').map(x=>x.trim()).filter(Boolean))].slice(0,20);if(!congs.length){m.textContent='Informe ao menos a sede.';return}
