@@ -171,6 +171,7 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
 .lock{background:var(--card);border-radius:16px;padding:18px;font-size:15px;box-shadow:var(--sh);color:var(--mut)}
 
 .menu{display:grid;gap:10px}
+.pushc{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px 12px 12px 14px;box-shadow:var(--sh);margin:0 0 14px;position:relative}.pushc>.ic{width:26px;height:26px;color:var(--wine);flex:none}.pushc div{flex:1;min-width:0}.pushc b{display:block;font-size:14.5px;color:var(--ink)}.pushc small{display:block;font-size:12.5px;color:var(--mut);margin-top:2px}.pushc .btn{width:auto;min-height:38px;padding:0 16px;font-size:14px;flex:none}.pushc .x{position:absolute;top:-8px;right:-6px;width:24px;height:24px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:11px;cursor:pointer}
 .menu a{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--sh);text-decoration:none;color:var(--ink)}
 .menu a span.i{width:44px;height:44px;border-radius:13px;background:var(--rose);color:var(--wine);display:grid;place-items:center;flex:none}.menu a span.i .ic{width:22px;height:22px}
 .menu a b{display:block;font:700 16px/1.2 Archivo,system-ui,sans-serif}.menu a small{color:var(--mut);font-size:13.5px;font-weight:600}
@@ -261,6 +262,7 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
   <section id="inicio">
     <div class="hero" id="hero"></div>
     <div id="avHome"></div>
+    <div id="pushC" hidden></div>
     <div class="h2" id="destH">Destaques</div>
     <div class="carr" id="carr"></div><div class="dots" id="dots"></div>
     <div class="quick"><a href="#eventos"><span><svg class="ic"><use href="#i-poster"/></svg></span>Eventos</a><a href="#calendario"><span><svg class="ic"><use href="#i-cal"/></svg></span>Calendário</a><a href="#escalas"><span><svg class="ic"><use href="#i-users"/></svg></span>Escalas</a><a href="#oracao"><span><svg class="ic"><use href="#i-heart"/></svg></span>Oração</a></div>
@@ -299,6 +301,7 @@ form.adm label{font-size:13.5px;font-weight:700;display:grid;gap:6px;color:var(-
   <section id="mais">
     <div class="ph"><h2>Mais</h2><p>Tudo sobre a igreja num só lugar.</p></div>
     <div class="menu">
+      <a href="#mais" id="pushM" data-push="1" hidden><span class="i"><svg class="ic"><use href="#i-bell"/></svg></span><div><b>Notificações no celular</b><small id="pushMs">…</small></div><svg class="ic"><use href="#i-chev"/></svg></a>
       <a href="#avisos"><span class="i"><svg class="ic"><use href="#i-mega"/></svg></span><div><b>Avisos</b><small>Recados do pastor e dos departamentos</small></div><svg class="ic"><use href="#i-chev"/></svg></a>
       <a href="#igreja"><span class="i"><svg class="ic"><use href="#i-info"/></svg></span><div><b>Conheça a igreja</b><small>Pastores e congregações</small></div><svg class="ic"><use href="#i-chev"/></svg></a>
       <a href="#programacao"><span class="i"><svg class="ic"><use href="#i-clock"/></svg></span><div><b>Programação semanal</b><small>Horários fixos de cada congregação</small></div><svg class="ic"><use href="#i-chev"/></svg></a>
@@ -922,16 +925,16 @@ document.addEventListener('click',async e=>{
   if(d.entrar){t.disabled=true;entrarGoogle()}
   else if(d.sair){sair()}
   else if(d.papel){}
-  else if(d.apvl){t.disabled=true;const by=eu.nome||eu.email;try{for(const x of ALL.escalas.filter(x=>x.lote===d.apvl&&x.status==='pendente'))await upd('escalas',x.id,{status:'publicado',aprovadoPor:by});render()}catch(_){t.disabled=false;t.textContent='Erro'}}
+  else if(d.apvl){t.disabled=true;const by=eu.nome||eu.email;try{const it=ALL.escalas.filter(x=>x.lote===d.apvl&&x.status==='pendente');for(const x of it)await upd('escalas',x.id,{status:'publicado',aprovadoPor:by});if(it.length){const mk=it[0].data.slice(0,7);notificar({titulo:'Escala de '+MES[+mk.slice(5)-1]+' publicada',corpo:(it[0].cong||'')+': '+it.length+' cultos. Toque para ver se você está escalado.',url:'./#escalas',cong:it[0].cong||''})}render()}catch(_){t.disabled=false;t.textContent='Erro'}}
   else if(d.rcl){const mot=t.closest('.rz').querySelector('textarea').value.trim();t.disabled=true;try{for(const x of ALL.escalas.filter(x=>x.lote===d.rcl&&x.status==='pendente'))await upd('escalas',x.id,{status:'recusado',motivo:mot});render()}catch(_){t.disabled=false}}
-  else if(d.apv){const [c,id]=d.apv.split('/');t.disabled=true;const by=eu.nome||eu.email;try{await upd(c,id,{status:'publicado',aprovadoPor:by});if(c==='eventos')for(const bn of ALL.banners.filter(x=>x.evento===id&&x.status==='pendente'))await upd('banners',bn.id,{status:'publicado',aprovadoPor:by});render()}catch(_){t.disabled=false;t.textContent='Erro'}}
+  else if(d.apv){const [c,id]=d.apv.split('/');t.disabled=true;const by=eu.nome||eu.email;try{const it0=(ALL[c]||[]).find(x=>x.id===id);await upd(c,id,{status:'publicado',aprovadoPor:by});if(it0)notificar(msgDe(c,it0));if(c==='eventos')for(const bn of ALL.banners.filter(x=>x.evento===id&&x.status==='pendente'))await upd('banners',bn.id,{status:'publicado',aprovadoPor:by});render()}catch(_){t.disabled=false;t.textContent='Erro'}}
   else if(d.rcs){const z=t.closest('.apc').querySelector('.rz');z.hidden=false;z.querySelector('textarea').focus()}
   else if(d.rcok){const [c,id]=d.rcok.split('/');const mot=t.closest('.rz').querySelector('textarea').value.trim();t.disabled=true;try{await upd(c,id,{status:'recusado',motivo:mot});if(c==='eventos')for(const bn of ALL.banners.filter(x=>x.evento===id))await upd('banners',bn.id,{status:'recusado',motivo:mot});render()}catch(_){t.disabled=false}}
   else if(d.eqdel){try{if(db)await db.doc('equipe/'+d.eqdel).delete();else S.equipe=S.equipe.filter(x=>x.id!==d.eqdel);rEquipe()}catch(_){}}
   else if(d.avid){if(cur()==='avisos'){marcar([d.avid]);t.classList.remove('new')}else{location.hash='avisos'}}
   else if(d.aus){openAus(d.aus)}
   else if(d.gom){ey=+d.gom.slice(0,4);emo=+d.gom.slice(5)-1;rEscalas()}
-  else if(d.cong!==undefined){cong=d.cong;try{localStorage.setItem('minhaCong',cong)}catch(_){}closeM();render()}
+  else if(d.cong!==undefined){cong=d.cong;try{localStorage.setItem('minhaCong',cong)}catch(_){}closeM();render();if(pushSub)pushSalvar().catch(()=>{})}
   else if(d.ev)openEv(d.ev,d.dt);
   else if(d.go)location.hash=d.go;
   else if(d.day){sel=sel===d.day?null:d.day;rCal()}
@@ -952,6 +955,31 @@ let bt;$('#busca').addEventListener('input',e=>{me=e.target.value;clearTimeout(b
 
 function shrinkBlob(file,max=1400){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const r=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(img.src);c.toBlob(b=>b?res(b):rej(),'image/jpeg',.85)};img.onerror=rej;img.src=URL.createObjectURL(file)})}
 function shrink(file,max=1000){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const r=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(img.src);let q=.78,u=c.toDataURL('image/jpeg',q);while(u.length>200000&&q>.3){q-=.12;u=c.toDataURL('image/jpeg',q)}res(u)};img.onerror=rej;img.src=URL.createObjectURL(file)})}
+/* ===== notificações push ===== */
+const PUSH_FN='https://ospxutgttdefnodvmcis.supabase.co/functions/v1/notificar';
+const pushOk=()=>typeof SB!=='undefined'&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+let pushSub=null,pushPub=null;
+const b64u=s=>{const b=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function pushChave(){if(pushPub)return pushPub;const r=await fetch(PUSH_FN,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"chave":1}'});pushPub=(await r.json()).pub;return pushPub}
+async function pushEstado(){if(!pushOk())return'nao';try{const reg=await navigator.serviceWorker.ready;pushSub=await reg.pushManager.getSubscription()}catch(_){}return pushSub&&Notification.permission==='granted'?'on':Notification.permission==='denied'?'bloq':'off'}
+async function pushSalvar(){if(!pushSub)return;const j=pushSub.toJSON();await SB.rpc('push_inscrever',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_cong:cong||''})}
+async function pushAtivar(){if(!pushOk())return false;const p=await Notification.requestPermission();if(p!=='granted'){rPush();return false}
+  const reg=await navigator.serviceWorker.ready;pushSub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(await pushChave())});await pushSalvar();rPush();return true}
+async function pushDesativar(){if(pushSub){try{await SB.rpc('push_sair',{p_endpoint:pushSub.endpoint})}catch(_){}try{await pushSub.unsubscribe()}catch(_){}pushSub=null}rPush()}
+async function rPush(){const st=await pushEstado();const c=$('#pushC'),m=$('#pushM');let fech=false;try{fech=localStorage.getItem('pushFechado')==='1'}catch(_){}
+  if(c){c.hidden=!(st==='off'&&!fech);c.innerHTML=st==='off'?`<div class="pushc"><svg class="ic"><use href="#i-bell"/></svg><div><b>Receba as novidades no celular</b><small>Escalas, avisos e eventos da sua congregação</small></div><button class="btn" data-pushon="1">Ativar</button><button class="x" data-pushx="1" aria-label="Agora não">✕</button></div>`:''}
+  if(m){m.hidden=st==='nao';$('#pushMs').textContent=st==='on'?'Ativadas. Toque para desligar.':st==='bloq'?'Bloqueadas. Libere nas configurações do celular (Apps → AD Carlos Barbosa → Notificações).':'Desativadas. Toque para ativar.'}}
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-pushon],[data-pushx],[data-push]');if(!t)return;e.preventDefault();
+  if(t.dataset.pushx){try{localStorage.setItem('pushFechado','1')}catch(_){}rPush()}
+  else if(t.dataset.pushon){t.disabled=true;t.textContent='…';try{await pushAtivar()}catch(_){t.disabled=false;t.textContent='Ativar'}}
+  else{try{const st=await pushEstado();if(st==='on')await pushDesativar();else if(st==='off')await pushAtivar();else rPush()}catch(_){rPush()}}});
+async function notificar(o){if(typeof SB==='undefined'||papel==='lider'||!o)return;try{const {data:{session}}=await SB.auth.getSession();if(!session)return;await fetch(PUSH_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify(o)})}catch(_){}}
+function msgDe(col,o){const lugar=o.cong&&o.cong!=='Todas'?o.cong:'';
+  if(col==='avisos')return{titulo:o.titulo||'Novo aviso',corpo:String(o.texto||'').slice(0,140),url:'./#avisos',cong:o.cong||''};
+  if(col==='eventos')return{titulo:'Novo evento: '+o.titulo,corpo:[o.data?fmt(o.data,{weekday:'long',day:'numeric',month:'long'}):'',o.hora,lugar].filter(Boolean).join(' · '),url:'./#eventos',cong:o.cong||''};
+  if(col==='escalas')return{titulo:'Escala: '+(o.culto||'novo culto'),corpo:[o.data?fmt(o.data,{weekday:'long',day:'numeric',month:'short'}):'',o.hora,lugar].filter(Boolean).join(' · ')+'. Confira quem está escalado.',url:'./#escalas',cong:o.cong||''};
+  return null}
+/* ===== fim notificações ===== */
 const stamp=o=>({...o,status:papel==='lider'?'pendente':'publicado',autor:eu.nome||eu.email});
 async function submit(form,col,build,after){
   form.addEventListener('submit',async e=>{e.preventDefault();const m=form.querySelector('.msg'),b=form.querySelector('.btn');
@@ -960,7 +988,7 @@ async function submit(form,col,build,after){
     try{const fd=new FormData(form);const o=stamp(build(fd));const f=fd.get('img');if(f&&f.size){const vid=/^video\//.test(f.type);
         if(assets){if(f.size>20*1024*1024)throw{code:'big'};m.textContent='Enviando arquivo…';const up=await assets.upload(vid?f:await shrinkBlob(f));o.mid=up.id;o.mtype=vid?'video':'image'}
         else if(vid)throw{code:'novid'};else o.img=await shrink(f)}
-      o.criado=new Date().toISOString();const ref=await db.collection(col).add(o);if(after)await after(o,ref,fd);form.reset();m.textContent=o.status==='pendente'?'Enviado! Aguardando aprovação do pastor.':'Publicado!'}
+      o.criado=new Date().toISOString();const ref=await db.collection(col).add(o);if(after)await after(o,ref,fd);if(o.status==='publicado')notificar(msgDe(col,o));form.reset();m.textContent=o.status==='pendente'?'Enviado! Aguardando aprovação do pastor.':'Publicado!'}
     catch(err){const c=err&&err.code;m.textContent=c==='invalid_argument'?'Você não tem permissão para publicar.':c==='big'?'Arquivo grande demais (máx. 20 MB).':c==='novid'?'Vídeos precisam de permissão de editor.':'Não deu certo. Tente de novo.'}
     b.disabled=false});
 }
@@ -1091,7 +1119,7 @@ async function impPublicar(btn){impLer();const m=$('#impMsg');const bad=IMP.iten
     else setCol('escalas',[...ALL.escalas,...lista.map((o,i)=>({...o,id:lote+'-'+i}))]);
     if(IMP.msg&&IMP.mes&&db&&papel!=='lider'){const id=(cn+'-'+IMP.mes).normalize('NFD').replace(/[^A-Za-z0-9-]/g,'');try{await db.doc('meses/'+id).set({cong:cn,mes:IMP.mes,texto:IMP.msg})}catch(_){}}
     else if(IMP.msg&&IMP.mes&&!db){S.meses=[...(S.meses||[]).filter(x=>!(x.cong===cn&&x.mes===IMP.mes)),{cong:cn,mes:IMP.mes,texto:IMP.msg}]}
-    const n=lista.length,pend=papel==='lider',mk=IMP.mes;IMP=null;$('#fimp').reset();rImp();$('#fimp .msg').textContent=pend?`Enviado! ${n} cultos aguardando aprovação do pastor.`:`Pronto! ${n} cultos publicados na escala.`;
+    const n=lista.length,pend=papel==='lider',mk=IMP.mes;if(!pend){const [yy,mm]=(mk||'-').split('-');notificar({titulo:'Escala de '+(MES[+mm-1]||'')+' publicada',corpo:cn+': '+n+' cultos. Toque para ver se você está escalado.',url:'./#escalas',cong:cn})}IMP=null;$('#fimp').reset();rImp();$('#fimp .msg').textContent=pend?`Enviado! ${n} cultos aguardando aprovação do pastor.`:`Pronto! ${n} cultos publicados na escala.`;
     if(mk){const [y,mo]=mk.split('-');ey=+y;emo=+mo-1}render()}
   catch(err){btn.disabled=false;m.textContent=err&&err.code==='invalid_argument'?'Você não tem permissão para publicar.':'Não deu certo. Tente de novo.'}}
 $('#fimp').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,m=f.querySelector('.msg');m.textContent='';const cn=f.elements.cong.value;const arq=f.elements.arq.files[0],txt=f.elements.txt.value.trim();
@@ -1112,7 +1140,7 @@ $('#fig').addEventListener('submit',async e=>{e.preventDefault();const f=e.targe
   const prog=f.elements.prog.value.split('\n').map(l=>l.split(';').map(x=>x.trim())).filter(a=>a.length>=4).map(a=>({cong:a[0],dia:DN.findIndex(d=>d.normalize('NFD').replace(/[\u0300-\u036f]/g,'').startsWith(a[1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').slice(0,3))),hora:a[2],nome:a.slice(3).join('; ')})).filter(x=>x.dia>=0);
   await db.doc('config/igreja').set({nome:f.elements.nome.value.trim()||DEFCFG.nome,congs,info,prog,codigo:f.elements.codigo.value.trim()});m.textContent='Salvo!'}catch(err){m.textContent='Não deu certo. Tente de novo.'}});
 function useSample(){usingSample=true;loaded=true;const d=JSON.parse(JSON.stringify(SAMPLE));for(const k in d)setCol(k,d[k]);render()}
-render();
+render();setTimeout(rPush,1500);
 (async()=>{
   db={collection:colRef,doc:docRef};
   assets={upload:async b=>{const t=b.type||'';const ext=t.includes('video')?(t.includes('quicktime')?'mov':t.includes('webm')?'webm':'mp4'):(t.includes('png')?'png':t.includes('webp')?'webp':'jpg');const path=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;const r=await SB.storage.from('midia').upload(path,b,{contentType:t||undefined,cacheControl:'31536000',upsert:false});if(r.error)throw mapErr(r.error);return{id:path}},
