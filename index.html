@@ -517,7 +517,7 @@ const sorted=()=>[...expand()].sort((a,b)=>(a.data+(a.hora||'')).localeCompare(b
 const futuros=()=>sorted().filter(e=>e.data>=TODAY&&inCong(e));
 const art=(e,cls='')=>{const c=mcol(e.ministerio);return `<div class="art ${cls}" style="background:linear-gradient(150deg,${c},${c}cc 60%,#1a0a12)">${hasMedia(e)?media(e,e.titulo):cross+`<div class="sm">${esc(e.ministerio||'Geral')}</div>`}${hasMedia(e)?'':`<div><div class="big">${esc(e.titulo)}</div><div class="sm" style="margin-top:8px">${fmt(e.data,{day:'numeric',month:'long'})}${e.hora?' · '+esc(e.hora):''}</div></div>`}</div>`};
 
-const CC={'Sede':'#2f6bff','CEAD':'#e8822e','Arco Verde':'#1fa06b','Vitória':'#9b5cf6'};
+const CC={'Sede':'#2f6bff','CEAD':'#c48a12','Arco Verde':'#b8432f','Vitória':'#7b8494'};
 const ccol=c=>CC[c]||'#d9a52b';
 const cpill=c=>c&&c!=='Todas'?`<span class="cpill" style="--cc:${ccol(c)}">${esc(c)}</span>`:'';
 function adIntro(cv, I, opt) {
