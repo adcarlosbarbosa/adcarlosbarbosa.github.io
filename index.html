@@ -1688,7 +1688,7 @@ function rFeed(){const box=$('#feed');if(!box)return;const it=[];
   let h=l.map((x,n)=>{let o='';if(x.t==='aviso'){const a=x.a,u=urgVivo(a);
       const acg=cCor(a.cong);
       const aig=ehDeIgreja(a.de);
-      o=`<article class="fp"><div class="fh"><span class="fa" style="background:${aig?'#0b2160':(acg||'#0b2160')}">${aig?'<img src="icon-192.png" alt="">':fotoDe(a.de)?`<img src="${fotoDe(a.de)}" alt="">`:esc(inic(a.de||'Liderança'))}</span><div><b>${esc(a.de||'Liderança')}</b><small>Aviso · ${esc(a.cong||'Todas')}${quando(a)?' · '+quando(a):''}</small></div><span class="ft${u?' u':''}">${u?'URGENTE':'AVISO'}</span></div>
+      o=`<article class="fp"><div class="fh"><span class="fa" style="background:${aig?'#0b2160':(acg||'#0b2160')}">${aig?'<img src="icon-192.png" alt="">':fotoDe(a.de)?`<img src="${fotoDe(a.de)}" alt="">`:esc(inic(a.de||'Liderança'))}</span><div><b>${esc(a.de||'Liderança')}</b><small>Aviso · ${esc(a.cong||'Todas')}${quando(a)?' · '+quando(a):''}</small></div><span class="ft${ehCxl(a)||u?' u':''}">${ehCxl(a)?'CANCELADO':u?'URGENTE':'AVISO'}</span></div>
       <button class="fx${u?' u':acg?' cg':''}"${acg?` style="--c:${acg}"`:''} data-avid="${esc(a.id)}">${a.titulo?`<b>${esc(a.titulo)}</b>`:''}<span>${esc(a.texto)}</span>${a.video?`<em class="avv" data-vurl="${esc(a.video)}">${IC('play')}Assistir vídeo</em>`:''}</button>${hasMedia(a)?`<div class="fi">${media(a,a.titulo||'Aviso')}</div>`:''}</article>`}
     else if(x.t==='cartaz'){const b=x.b,k='b:'+b.id;
       o=`<article class="fp"><div class="fh"><span class="fa" style="background:#0b2160"><img src="icon-192.png" alt=""></span><div><b>${esc(cfg().nome||'Igreja')}</b><small>Cartaz${b.criado?' · '+quando({criado:b.criado}):''}</small></div><span class="ft c">CARTAZ</span></div>
@@ -2144,17 +2144,40 @@ function rAdmin(){
   const items=[...ALL[col]].filter(x=>papel!=='lider'||x.autor_email===eu.email||pub(x)).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
   const podeFoto=(col==='eventos'||col==='banners')&&papel!=='lider';
   const thumb=x=>{if(!podeFoto)return'';const c=col==='eventos'?capaEv(x):(hasMedia(x)?x:null);const u=c?(c.mtype==='video'?'':capaUrl(c)):'';return u?`<img class="lth" src="${esc(u)}" alt="" loading="lazy">`:`<span class="lth vz">${c&&c.mtype==='video'?'vídeo':'sem<br>foto'}</span>`};
-  $('#admL').innerHTML=items.length?items.map(x=>`<div class="li">${thumb(x)}<div class="lmain"><b>${esc(x.titulo||x.culto||x.ministerio||(x.texto?String(x.texto).slice(0,40)+'…':'Banner'))}</b><br><span style="color:var(--mut)">${x.cong?esc(x.cong)+' · ':''}${x.semanal&&x.data?'Toda semana, '+DIAS[toD(x.data).getDay()]:x.data?fmt(x.data,{day:'numeric',month:'short',year:'numeric'}):esc(x.sub||'')}${okMid(x)?(x.mtype==='video'?' · vídeo':' · imagem'):''}${x.de?esc(x.de)+' → '+esc(x.cong||'Todas')+(x.fixo?' · fixado':''):''}${x.ate&&!x.data?(x.ate<TODAY?' · <b style="color:#c2410c">expirado</b>':' · até '+fmt(x.ate,{day:'numeric',month:'short'})):''}${x.hora?' · '+esc(x.hora):''}${col==='eventos'&&Array.isArray(x.substitui)&&x.substitui.length?`<br><span class="st prog">No lugar de: ${esc(x.substitui.map(i=>(ALL.eventos.find(y=>y.id===i)||{}).titulo).filter(Boolean).join(', ')||'culto fixo')}</span>`:''}${pubFut(x)?`<br><span class="st prog">Programado · ${esc(pubTxt(x))}</span>`:''}${x.inicio&&x.inicio>TODAY?`<br><span class="st prog">Aparece a partir de ${fmt(x.inicio,{day:'numeric',month:'short'})}</span>`:''}${x.status==='pendente'?'<br><span class="st pend">Aguardando aprovação</span>':x.status==='recusado'?`<br><span class="st rec">Recusado${x.motivo?': '+esc(x.motivo):''}</span>`:''}</span></div><span class="lbt">${papel!=='lider'?`<button data-edx="${col}/${esc(x.id)}">Editar</button>`:''}${podeFoto?`<button class="foto" data-foto="${col}/${esc(x.id)}">Trocar foto</button><button class="cxlb${x.cancelado?' on':''}" data-cxl="${col}/${esc(x.id)}">${x.cancelado?'Desfazer cancelado':'Cancelado'}</button>`:''}${papel!=='lider'||x.autor_email===eu.email&&!pub(x)?`<button data-del="${col}/${esc(x.id)}">Apagar</button>`:''}</span></div>`).join(''):'<div class="empty">Nada publicado ainda.</div>';
+  $('#admL').innerHTML=items.length?items.map(x=>`<div class="li">${thumb(x)}<div class="lmain"><b>${esc(x.titulo||x.culto||x.ministerio||(x.texto?String(x.texto).slice(0,40)+'…':'Banner'))}</b><br><span style="color:var(--mut)">${x.cong?esc(x.cong)+' · ':''}${x.semanal&&x.data?'Toda semana, '+DIAS[toD(x.data).getDay()]:x.data?fmt(x.data,{day:'numeric',month:'short',year:'numeric'}):esc(x.sub||'')}${okMid(x)?(x.mtype==='video'?' · vídeo':' · imagem'):''}${x.de?esc(x.de)+' → '+esc(x.cong||'Todas')+(x.fixo?' · fixado':''):''}${x.ate&&!x.data?(x.ate<TODAY?' · <b style="color:#c2410c">expirado</b>':' · até '+fmt(x.ate,{day:'numeric',month:'short'})):''}${x.hora?' · '+esc(x.hora):''}${col==='eventos'&&Array.isArray(x.substitui)&&x.substitui.length?`<br><span class="st prog">No lugar de: ${esc(x.substitui.map(i=>(ALL.eventos.find(y=>y.id===i)||{}).titulo).filter(Boolean).join(', ')||'culto fixo')}</span>`:''}${pubFut(x)?`<br><span class="st prog">Programado · ${esc(pubTxt(x))}</span>`:''}${x.inicio&&x.inicio>TODAY?`<br><span class="st prog">Aparece a partir de ${fmt(x.inicio,{day:'numeric',month:'short'})}</span>`:''}${x.status==='pendente'?'<br><span class="st pend">Aguardando aprovação</span>':x.status==='recusado'?`<br><span class="st rec">Recusado${x.motivo?': '+esc(x.motivo):''}</span>`:''}</span></div><span class="lbt">${papel!=='lider'?`<button data-edx="${col}/${esc(x.id)}">Editar</button>`:''}${podeFoto?`<button class="foto" data-foto="${col}/${esc(x.id)}">Trocar foto</button>`:''}${(col==='eventos'||col==='banners'||col==='avisos')&&papel!=='lider'?`<button class="cxlb${x.cancelado?' on':''}" data-cxl="${col}/${esc(x.id)}">${x.cancelado?'Desfazer cancelado':'Cancelado'}</button>`:''}${papel!=='lider'||x.autor_email===eu.email&&!pub(x)?`<button data-del="${col}/${esc(x.id)}">Apagar</button>`:''}</span></div>`).join(''):'<div class="empty">Nada publicado ainda.</div>';
 }
 
 
 
 /* ===== marcar evento/cartaz como cancelado (faixa vermelha) ===== */
+async function marcarCxl(col,id,novo,motivo,avisar){
+  const x=(ALL[col]||[]).find(y=>String(y.id)===String(id));if(!x)return;
+  await upd(col,id,{cancelado:novo});
+  if(col==='eventos')for(const bn of (ALL.banners||[]).filter(y=>String(y.evento||'')===String(id)))await upd('banners',bn.id,{cancelado:novo});
+  if(novo&&avisar){const nome=String(x.titulo||x.sub||'A programação').slice(0,60);
+    notificar({titulo:'Cancelado: '+nome,
+      corpo:(motivo&&motivo.trim())?motivo.trim().slice(0,160):'Esta programação foi cancelada. Toque para ver.',
+      url:'./#inicio',cong:x.cong||''})}
+  render()}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-cxl]');if(!b||!canEdit||papel==='lider')return;e.preventDefault();
-  const [col,id]=b.dataset.cxl.split('/');const x=(ALL[col]||[]).find(y=>String(y.id)===id);if(!x)return;const novo=!x.cancelado;
-  b.disabled=true;b.textContent='Salvando…';
-  try{await upd(col,id,{cancelado:novo});if(col==='eventos')for(const bn of (ALL.banners||[]).filter(y=>String(y.evento||'')===String(id)))await upd('banners',bn.id,{cancelado:novo});render()}
-  catch(_){b.disabled=false;b.textContent='Não deu certo'}});
+  const [col,id]=b.dataset.cxl.split('/');const x=(ALL[col]||[]).find(y=>String(y.id)===String(id));if(!x)return;
+  if(x.cancelado){b.disabled=true;b.textContent='Salvando…';
+    try{await marcarCxl(col,id,false)}catch(_){b.disabled=false;b.textContent='Não deu certo'}return}
+  const nome=esc(String(x.titulo||x.sub||'esta programação').slice(0,60));
+  $('#sheet').innerHTML=`<div class="bd" style="padding-top:24px"><h2 style="font-size:22px;margin-bottom:4px">Marcar como cancelado</h2>
+    <p class="note" style="text-align:left;margin:0 0 14px"><b>${nome}</b> vai aparecer como cancelado para todos, na hora.</p>
+    <form class="adm" id="fcxl">
+      <label>Motivo (opcional, vai na notificação)<input name="motivo" maxlength="160" placeholder="Ex.: por causa da chuva"></label>
+      <button class="btn" type="submit" data-av="1">Cancelar e avisar todos</button>
+      <button class="btn gh" type="submit" data-av="0" style="margin-top:8px">Só marcar, sem avisar</button>
+      <p class="msg"></p></form></div>`;
+  $('#modal').classList.add('on');
+  const fm=$('#fcxl');let av=true;
+  fm.querySelectorAll('[data-av]').forEach(bt=>bt.addEventListener('click',()=>{av=bt.dataset.av==='1'}));
+  fm.onsubmit=async ev=>{ev.preventDefault();const m=fm.querySelector('.msg');
+    fm.querySelectorAll('.btn').forEach(bt=>bt.disabled=true);m.textContent='Salvando…';
+    try{await marcarCxl(col,id,true,fm.elements.motivo.value,av);closeM()}
+    catch(_){fm.querySelectorAll('.btn').forEach(bt=>bt.disabled=false);m.textContent='Não deu certo. Tente de novo.'}}});
 
 /* ===== app v8: notificações desligadas no Android → passo a passo ===== */
 const NOTIF_SET='intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.provider.extra.APP_PACKAGE=br.com.adcarlosbarbosa.app;end';
